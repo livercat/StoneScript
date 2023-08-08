@@ -60,12 +60,6 @@ weapon_aliases = {
         "staff",
     ],
     "ranged.1h": [
-        "poison crossbow",
-        "fire crossbow",
-        "ice crossbow",
-        "aether crossbow",
-        "vigor crossbow",
-        "stone crossbow",
         "crossbow",
         "poison wand",
         "fire wand",
@@ -74,7 +68,15 @@ weapon_aliases = {
         "vigor wand",
         "stone wand",
     ],
-    "ranged.2h": ["repeating crossbow"],
+    "ranged.2h": [
+        "poison crossbow",
+        "fire crossbow",
+        "ice crossbow",
+        "aether crossbow",
+        "vigor crossbow",
+        "stone crossbow",
+        "repeating crossbow",
+    ],
     "shields.dashing": ["dashing shield"],
 }
 

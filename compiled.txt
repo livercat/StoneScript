@@ -53,7 +53,7 @@ func healwalk()
   // Small enemies
   ?foe = mosquito
     ?foe.distance >= 5
-      equip_2_weapons("crossbow *6", "stone crossbow *6")
+      equip_1_weapon("stone crossbow *6")
     :
       equip_2_weapons("stone sword *6", "stone shield *6")
   :?foe = scarab
