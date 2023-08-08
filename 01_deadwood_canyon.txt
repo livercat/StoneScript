@@ -27,10 +27,10 @@ Level: Deadwood canyon
 
   healwalk()
   
-  ?harvest.distance < 10
-    // Cut down trees with the hatchet
-    // using the fast-cutting when available
-    equip hatchet
-    ?harvest.distance <= 4
-    ^& item.GetCooldown("hatchet") <= 0
-      activate R
+  // ?harvest.distance < 10
+  //   // Cut down trees with the hatchet
+  //   // using the fast-cutting when available
+  //   equip hatchet
+  //   ?harvest.distance <= 4
+  //   ^& item.GetCooldown("hatchet") <= 0
+  //     activate R
