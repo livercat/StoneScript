@@ -1,244 +1,205 @@
+var armor_shield = "stone shield *6"
+var ah_shield = "vigor shield ah"
+var dashing = "dashing shield"
 
-func equip_1_weapon(weapon)
-  equip @weapon@
+var fire_debuff = "fire sword dF"
+var poison_debuff = "posion sword dP"
+var ice_debuff = "ice hammer dI"
+var aether_dps = "aether hammer D"
+var vigor_dps = "TODO"
 
-func equip_2_weapons(weaponL, weaponR)
-  equipL @weaponL@
-  equipR @weaponR@
+var melee_dps = "fire sword dF"
+var melee_offhand = "aether hammer D"
 
-// Place this function at the default case
-// of any switch-case
+var ranged_1h = "poison wand D"
+var ranged_dps = "repeating crossbow"
+
+func equip_shield()
+  ?hp < maxhp
+    equipR @ah_shield@
+  :
+    equipR @armor_shield@
+
+func equip_offhand(mode)
+  ?mode = "dps"
+    equipR @melee_offhand@
+  :?mode = "def"
+    equip_shield()
+
 func healwalk()
-  // Pick up materials quickly with Star stone
-  ?pickup.distance < 10
-    equip_2_weapons("star", "stone shield *6")
-  // Heal and gain armor while just walking
-  // towards next objective. If 100% healed,
-  // walk faster.
-  :?target = waypoint | foe.distance > 22
-    ?hp < maxhp
-      equip_2_weapons("ouroboros", "stone shield *6")
-    :
-      equip_2_weapons("triskelion", "stone shield *6")
-
-
-
-func rocky_plateau_ElementSwitcher()
-  ?foe = aether
-    equipL vigor hammer
-  :?foe = fire
-    equipL aether hammer
-  :?foe = ice
-    equipL fire sword
-  :?foe = poison
-    equipL ice hammer
-  :?foe = vigor
-    equipL poison sword
-  :
-    equipL fire sword
-
-func rocky_plateau_DebuffApplier()
-  ?foe.buffs.string ="buff_protection"
-    rocky_plateau_ElementSwitcher()
-  :?foe.debuffs.string = "∞:debuff_damage:1:"| foe = immune_to_debuff_damage
-    ?foe.debuffs.string = "φ:debuff_dot:1:"| foe = immune_to_debuff_dot
-      ?foe.debuffs.string = "❄:debuff_chill:6:"| foe = immune_to_debuff_chill
-        rocky_plateau_ElementSwitcher()
+  ?hp < 10
+    activate potion
+  ? ! foe | foe.distance > 22
+    equip_shield()
+    ?pickup.distance < 8
+      equipL star
+    :?target = waypoint | foe.distance > 22
+      ?hp < maxhp
+        equipL ouroboros
       :
-        equipL ice hammer
+        equipL triskelion
+
+func pickpocket()
+  equip skeleton arm
+  ?foe.hp <= 32 &
+  ^item.CanActivate("skeleton_arm")
+    activate R
+
+func melee(mode)
+  ?foe.distance < 23
+
+    ?foe.distance < 7 & item.GetCooldown("skeleton_arm") <= 0 |
+    ^buffs.string ! "pick_pocket:1"
+      pickpocket()
     :
-      equipL fire sword
-  :
-    equipL poison sword
+      ?foe.distance >= 7
+        equipR @dashing@
+      :
+        equip_offhand(mode)
+
+      ?foe = aether
+        equipL @poison_debuff@ // vigor
+      :?foe = fire
+        equipL @aether_dps@
+      :?foe = ice
+        equipL @fire_debuff@
+      :?foe = poison
+        equipL @ice_debuff@
+      :?foe = vigor
+        equipL @poison_debuff@
+      :
+        equipL @melee_dps@
+
+func melee_boss(mode)
+  ?foe.distance < 23
+    // hammer debuff
+    ?foe.armor > 0 & foe.distance <= 10 &
+    ^item.GetCooldown("hammer") <= 0 |
+    ^item.GetCooldown("hammer") >= 647 // ios needs more time
+      equip heavy hammer
+      ?item.CanActivate("hammer")
+        activate R
+
+    :?foe.buffs.string ="buff_protection"
+      melee(mode)
+    :?foe.debuffs.string = "∞:debuff_damage:1:"| foe = immune_to_debuff_damage
+      ?foe.debuffs.string = "φ:debuff_dot:1:"| foe = immune_to_debuff_dot
+        ?foe.debuffs.string = "❄:debuff_chill:1:"| foe = immune_to_debuff_chill
+          melee(mode)
+        :
+          equip_offhand(mode)
+          equipL @ice_debuff@
+      :
+        equip_offhand(mode)
+        equipL @fire_debuff@
+    :
+      equip_offhand(mode)
+      equipL @poison_debuff@
+
+func ranged(mode)
+  ?foe.distance < 23
+    ?foe.distance < 7 & item.GetCooldown("skeleton_arm") <= 0 |
+    ^buffs.string ! "pick_pocket:1"
+      pickpocket()
+    :?foe.distance >= 8
+      ?mode = "dps"
+        equip @ranged_dps@
+      :?mode = "def"
+        equipL @ranged_1h@
+        equip_offhand(mode)
+    :
+      melee(mode)
 
 ?loc = rocky
+  var dashing = "vigor shield ah" // disable dashing to avoid the ray
   healwalk()
-  ?foe = boss
-    equipL fire sword
-    equipR stone shield *6
-  ?foe.distance <= 5
-    rocky_plateau_DebuffApplier()
-  ?(hp + armor) < 31
-    activate potion
-  ?foe.state=115 & foe.time=60
+  melee_boss("def")
+  ?foe.state = 115 & foe.time = 60 // dodge the ray
     equipL mind stone
 
 ?loc = deadwood
-  // Small enemies
-  ?foe = mosquito
-    ?foe.distance >= 5
-      equip_1_weapon("repeating crossbow *6")
-    :
-      equip_2_weapons("fire sword *4", "stone shield *6")
-  :?foe = scarab
-    equip_2_weapons("fire sword *4", "stone shield *6")
-  :?foe = boss | foe = poena
-    // Boss: Xyaloalgia, residue of Leuce
-    // and Poena, its phase 2
-    ?foe.distance >= 8
-      equip_2_weapons("fire sword *4", "dashing shield *4")
-    :
-      equip_2_weapons("fire sword *4", "stone shield *6")
-  ?hp <= 10
-    activate potion
-
   healwalk()
-  
-  ?harvest.distance < 10 & res.wood < 100
-    // Cut down trees with the hatchet
-    // using the fast-cutting when available
-    equip hatchet
-    ?harvest.distance <= 3
-    ^& item.GetCooldown("hatchet") <= 0
-      activate R
+  ?foe = mosquito
+    ranged("dps")
+  :?foe = scarab
+    melee("def")
+  :
+    melee_boss("def")
 
 ?loc = caves
-  ?foe ! boss  // Small enemies
-    ?hp = maxhp | foe.distance <= 23
-      // Healed completely or enemy too close
-      equip_2_weapons("fire sword *4", "poison sword *4")
-    :
-      // Try to heal while attacking from afar
-      equip_2_weapons("fire sword *4", "ouroboros")
-  :?foe = boss  // Bolesh, the cunning
-    ?foe.distance > 10
-      equip_2_weapons("fire sword *4", "dashing shield *4")
-    :
-      equip_2_weapons("fire sword *4", "stone shield *6")
-  :?hp < 10
-    activate potion
-
   healwalk()
-
-?loc = fungus_forest
-  ?hp = maxhp | foe.distance <= 23
-    // Healed completely or enemy too close
-    equip_2_weapons("poison sword *4", "fire sword *4")
+  ?foe ! bosss
+    ranged("dps")
   :
-    // Try to heal while attacking from afar
-    equip_2_weapons("poison sword *4", "ouroboros")
-  ?hp <= 10
-    activate potion
+    melee_boss("def")
+
+?loc = fungus_forest | loc = fungus_forest_boss
   healwalk()
-
-?loc = fungus_forest_boss  // Boss room
-  ?foe = mushroom_boss_skinny  // Enoki
-    equip_2_weapons("poison sword *4", "fire sword *4")
-  :?foe = mushroom_boss // Angry or Morel
-    ?foe.distance >= 6
-      // Morel's hand keeps you at distance 5
-      equip_2_weapons("poison sword *4", "dashing shield *4")
-    :?foe.armor > 0
-      equip_2_weapons("vigor hammer *3", "aether hammer *3")
-    :
-      equip_2_weapons("poison sword *4", "stone shield *6")
-  ?hp <= 10
-    activate potion
-  healwalk()
-
-?loc = undead_crypt_boss | loc = undead_crypt
-  ?foe ! boss  // Small enemies
-    ?hp = maxhp | foe.distance <= 23
-      // Healed completely or enemy too close
-      equip_2_weapons("vigor hammer *3", "fire sword *4")
-  :?foe = boss
-    equip_2_weapons("vigor hammer *3", "fire sword *4")
-  :?hp < 10
-    activate potion
-
-  healwalk()
-
-?loc = mine
-  // Small enemies
-  ?foe = master
-  ^ | foe = elemental
-  ^ | foe = geyser
-  ^ | foe = walker
-    ?foe.distance > 8
-      equip_2_weapons("aether hammer *3", "dashing shield *4")
-    :?foe.armor > 0
-      equip_2_weapons("aether hammer *3", "vigor hammer *3")
-    :
-      equip_2_weapons("aether hammer *3", "stone shield *6")
-  :?hp < 10
-    activate potion
-  healwalk()
-
-?loc = bronze_guardian
-  ?hp <= 6
-    activate potion
   ?foe ! boss
-    equip rep
-  ?foe = boss
-    ?foe.state=32 & foe.time=22
-      equipR mind stone
-    ?foe.state=33
-      ?foe.distance>7
-        equipL sword
-        equipR dashing
-      ?foe.distance<=6 & hp>=30 & foe.armor>0
-        equip he
-    ?foe.state ! 33 & foe.state ! 32 &
-      ^item.getcooldown("hammer")<=646
-      equip rep
-    ?foe = boss & foe.distance <= 20 &
-    ^item.GetCooldown("hammer") <=0
-      equip hea
-      ?item.CanActivate("hammer")
-        activate R
+    ranged("dps")
+  :
+    melee_boss("def")
+
+?loc = undead_crypt | loc = undead_crypt_boss
   healwalk()
+  ?foe = ghost | foe = large_ghost | foe = ghost_tomb // immune to physical
+    equipL @ranged_1h@
+    equip_offhand(mode)
+  :?foe ! boss
+    ranged("dps")
+  :
+    melee_boss("def")
 
-var hrminir_encountered = false
-  
+?loc = mine | loc = bronze_guardian
+  healwalk()
+  ?foe ! boss
+    melee("def")  // they're all ranged
+  :?foe.state = 32 & foe.time = 22 // dodge hammer
+    equipR mind stone
+  :?foe.state = 33 // hammer is down
+    ?foe.distance > 7
+      equipL triskelion
+      equipR @dashing@
+    :?foe.distance <= 7
+      ?foe.armor > 0 &
+      ^item.GetCooldown("hammer") <= 0 |
+      ^item.GetCooldown("hammer") >= 647 // ios needs more time
+        equip heavy hammer
+        ?item.CanActivate("hammer")
+          activate R
+      :
+        equipL @melee_dps@
+        equipR @melee_offhand@
+  :
+    equip @ranged_dps@
+
 ?loc = icy_ridge
-  // Small enemies
+  var hrminir_encountered = false
+  healwalk()
   ?foe = elemental | foe = ki
-    ?hp = maxhp | foe.distance <= 23
-      // Healed completely or enemy too close
-      equip_2_weapons("fire sword *4", "poison sword *4")
-    :
-      // Try to heal while attacking from afar
-      equip_2_weapons("fire sword *4", "ouroboros")
+    melee("def")
   :?foe = pillar | foe = ice_wall
-    ?foe.distance <= 5
-      equip blade_of_god
-      ?hrminir_encountered &
-      ^ item.GetCooldown("blade_of_god") <= 0
-        // Hit the wall and the boss
-        // behind it as well. Don't use `R`
-        // before the boss to avoid waiting
-        // for the cooldown.
-        activate R
+    ?hrminir_encountered
+      melee("def")
     :
-      equip_2_weapons("fire sword *4", "dashing shield *4")
-
-  // Hrímnir
+      ranged("def")
   :?foe = boss
     hrminir_encountered = true
     ?foe.distance <= 2
-      ?foe.armor > 0
-        equip_2_weapons("vigor hammer *3", "aether hammer *3")
-      :
-        equip_2_weapons("fire sword *4", "poison sword *4")
+      melee_boss("dps")
     :?foe.distance <= 5
       // The shovel has an attack range of 1
       // so it forces the player to move very
       // very close. So close that it can avoid
       // the attacks (snowballs)
       equip shovel
-    :?foe.distance > 5
-      equip_2_weapons("fire sword *4", "dashing shield *4")
+    :
+      equipL @melee_dps@
+      equipR @dashing@
 
+?loc = temple | loc = nagaraja
   healwalk()
-
-
-
-?loc = temple
-  equip_2_weapons("ice hammer *3", "fire sword *4")
-  ?hp <= 10
-    activate potion
-
-?loc = nagaraja
-  equip blade_of_god
-  ?hp <= 10 | debuffs.count >= 8
-    activate potion
+  ?foe ! boss
+    melee("def")
+  :
+    melee_boss("dps")

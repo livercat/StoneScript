@@ -33,6 +33,12 @@ func DebuffApplier()
       equipL fire sword
   :
     equipL poison sword
+  ?foe = boss & foe.distance <= 20 &
+  ^foe.state ! 115 &
+  ^item.GetCooldown("hammer") <=0
+    equip hea
+    ?item.CanActivate("hammer")
+      activate R
 
 ?loc = rocky
   healwalk()
@@ -41,7 +47,10 @@ func DebuffApplier()
     equipR stone shield *6
   ?foe.distance <= 5
     DebuffApplier()
-  ?(hp + armor) < 31
+  ?foe.distance > 7
+    equipL sword
+    equipR dashing
+  ?hp < 10
     activate potion
   ?foe.state=115 & foe.time=60
     equipL mind stone
