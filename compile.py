@@ -22,12 +22,12 @@ weapon_re = re.compile(
 
 weapon_aliases = {
     # required
-    "melee.1h": ["sword", "big stone sword", "stone sword", "warhammer"],
-    "shields.armor": ["shield", "compound shield"],
+    "melee.1h": ["stone sword", "sword", "big stone sword", "war hammer"],
+    "shields.armor": ["stone shield", "shield", "compound shield"],
     # optional
     "melee.hammer": ["warhammer"],
     "melee.staff": ["staff"],
-    "ranged.1h": ["crossbow", "wand"],
+    "ranged.1h": ["crossbow", "wand", "stone wand"],
     "ranged.2h": ["repeating crossbow"],
     "shields.dashing": ["dashing shield"],
 }
