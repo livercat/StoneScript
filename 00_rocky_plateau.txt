@@ -39,3 +39,5 @@ Level: Rocky plateau
     // armor combined
     ?(hp + armor) < 31
       activate potion
+    ?foe.state=115 & foe.time=50
+      equip mind stone
