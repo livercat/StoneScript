@@ -6,20 +6,14 @@ Released under the BSD 3-clause license.
 Level: Haunted Halls
 */
 
-var loadouts = import my/loadouts
-
-func equip_melee()
-  equipL sword *10 +7
-  equipR shield *10 vigor
-
-func equip_staff()
-  equip staff *8 vigor
-
 ?loc = undead_crypt_boss | loc = undead_crypt
-  // Small enemies and boss: same strategy
-  // just keep on using the vigor staff
-  // and heal while walking between enemies
-  equip_staff()
-  ?hp < 10
+  ?foe ! boss  // Small enemies
+    ?hp = maxhp | foe.distance <= 23
+      // Healed completely or enemy too close
+      equip_staff("vigor")
+  :?foe = boss
+    equip_staff("vigor")
+  :?hp < 10
     activate potion
-  loadouts.healwalk()
+
+  healwalk()

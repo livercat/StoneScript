@@ -6,35 +6,6 @@ Released under the BSD 3-clause license.
 Level: Icy Ridge
 */
 
-var loadouts = import my/loadouts
-
-func equip_melee()
-  equipL sword *10 +7
-  equipR shield *10 poison
-
-func equip_dps()
-  equipL sword *9 aether +4
-  equipR sword *10 +7
-
-func equip_dashing()
-  equipL sword *9
-  equipR shield *10 dashing
-
-func equip_staff()
-  equip staff *10 fire +3
-
-func equip_ranged_healing()
-  equipL crossbow *10
-  equipR ouroboros
-  
-func equip_ranged_shield()
-  equipL crossbow *10
-  equipR shield *10 poison +3
-
-func equip_armor_piercing()
-  equipL warhammer *10 poison +5
-  equipR warhammer *10 +8
-
 var hrminir_encountered = false
   
 ?loc = icy_ridge
@@ -42,10 +13,10 @@ var hrminir_encountered = false
   ?foe = elemental | foe = ki
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_staff()
+      equip_staff("fire")
     :
       // Try to heal while attacking from afar
-      equip_ranged_healing()
+      equip_ranged_healing("fire")
   :?foe = pillar | foe = ice_wall
     ?foe.distance <= 5
       equip blade_of_god
@@ -57,16 +28,16 @@ var hrminir_encountered = false
         // for the cooldown.
         activate R
     :
-      equip_dashing()
+      equip_dashing("fire")
 
   // Hrímnir
   :?foe = boss
     hrminir_encountered = true
     ?foe.distance <= 2
       ?foe.armor > 0
-        equip_armor_piercing()
+        equip_armor_piercing("fire")
       :
-        equip_dps()
+        equip_dps_melee("fire")
     :?foe.distance <= 5
       // The shovel has an attack range of 1
       // so it forces the player to move very
@@ -74,7 +45,7 @@ var hrminir_encountered = false
       // the attacks (snowballs)
       equip shovel
     :?foe.distance > 5
-      equip_dashing()
+      equip_dashing("fire")
 
-  loadouts.healwalk()
+  healwalk()
 

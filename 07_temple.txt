@@ -9,7 +9,7 @@ Level: Temple
 var loadouts = import my/loadouts
 
 ?loc = temple
-  equip staff *8 ice
+  equip_staff("ice")
   ?hp <= 10
     activate potion
 
