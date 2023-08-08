@@ -1,0 +1,409 @@
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Sets of weapons abstracted away as nicely
+named functions.
+*/
+
+// Place this function at the default case
+// of any switch-case
+func loadouts_healwalk()
+  // Pick up materials quickly with Star stone
+  ?pickup.distance < 10
+    equipL star
+    equipR shield *10
+  // Heal and gain armor while just walking
+  // towards next objective. If 100% healed,
+  // walk faster.
+  :?target = waypoint | foe.distance > 22
+    ?hp < maxhp
+      equipL ouroboros
+      equipR shield *10
+    :
+      equipL triskelion
+      equipR shield *10
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+FOR GAME VERSION v3.14.2 as of 2022-04-25
+
+Keep lines at 48 characters at most, because
+that is the line length of the mind stone UI
+within the game.
+*/
+
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Rocky plateau
+*/
+
+
+?loc = rocky
+  equip shovel
+  loadouts_healwalk()
+  
+  // Pick up stones quickly with Star stone
+  ?pickup.distance < 6
+    loadouts_star_ouroboros()
+
+  // Boss: Dysangelos, phase 1 (base form)
+  ?foe = dysangelos_bearer
+    equipL sword
+    equipR shield
+
+  // Boss: Dysangelos, phase 2 (elemental form)
+  ?foe = dysangelos_elementalist
+    equipL sword
+    equipR shield
+    // TODO use the proper runes against
+    // the current rune in the eye of the boss
+
+  // Boss: Dysangels, phase 3 (perfect form)
+  ?foe = dysangelos_perfected
+    equipL sword
+    equipR shield
+    ?foe.armor > 0
+      loadout 3
+    // Their most powerful move deals 30 damage
+    // points on 5* difficulty, so we need to
+    // heal if we don't have enough health and
+    // armor combined
+    ?(hp + armor) < 31
+      activate potion
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Deadwood canyon
+*/
+
+
+func 01_deadwood_canyon_equip_melee()
+  equipL sword *10
+  equipR shield *10 poison
+
+func 01_deadwood_canyon_equip_dashing()
+  equipL sword *10
+  equipR shield *10 dashing
+
+func 01_deadwood_canyon_equip_ranged_healing()
+  equipL crossbow *10
+  equipR ouroboros
+
+func 01_deadwood_canyon_equip_ranged()
+  equip repeating crossbow *10
+
+?loc = deadwood
+  // Small enemies
+  ?foe = mosquito
+    ?foe.distance >= 5
+      01_deadwood_canyon_equip_ranged()
+    :
+      01_deadwood_canyon_equip_melee()
+  :?foe = scarab
+    01_deadwood_canyon_equip_melee()
+  :?foe = boss | foe = poena
+    // Boss: Xyaloalgia, residue of Leuce
+    // and Poena, its phase 2
+    ?foe.distance >= 8
+      01_deadwood_canyon_equip_dashing()
+    :
+      01_deadwood_canyon_equip_melee()
+  ?hp <= 10
+    activate potion
+  loadouts_healwalk()
+  ?harvest.distance < 10
+    // Cut down trees with the hatchet
+    // using the fast-cutting when available
+    equip hatchet
+    ?harvest.distance <= 4
+    ^& item.GetCooldown("hatchet") <= 0
+      activate R
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Caves of fear
+*/
+
+
+func 02_caves_of_fear_equip_melee()
+  equipL sword *10
+  equipR shield *10 fire
+
+func 02_caves_of_fear_equip_dashing()
+  equipL sword *10
+  equipR shield *10 dashing
+
+func 02_caves_of_fear_equip_staff()
+  equip staff *8 ice
+
+func 02_caves_of_fear_equip_ranged_healing()
+  equipL crossbow *10
+  equipR ouroboros
+
+?loc = caves
+  ?foe ! boss  // Small enemies
+    ?hp = maxhp | foe.distance <= 23
+      // Healed completely or enemy too close
+      02_caves_of_fear_equip_staff()
+    :
+      // Try to heal while attacking from afar
+      02_caves_of_fear_equip_ranged_healing()
+  :?foe = boss  // Bolesh, the cunning
+    ?foe.distance > 10
+      02_caves_of_fear_equip_dashing()
+    :
+      02_caves_of_fear_equip_melee()
+  :?hp < 10
+    activate potion
+
+  loadouts_healwalk()
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Mushroom Forest
+*/
+
+
+func 03_mushroom_forest_equip_melee()
+  equipL sword *10 +7
+  equipR shield *10 poison
+
+func 03_mushroom_forest_equip_armor_piercing()
+  equipL warhammer *10 poison +5
+  equipR warhammer *10 +8
+
+func 03_mushroom_forest_equip_dashing()
+  equipL sword *10
+  equipR shield *10 dashing
+
+func 03_mushroom_forest_equip_staff()
+  equip staff *10 poison
+
+func 03_mushroom_forest_equip_ranged_healing()
+  equipL crossbow *10
+  equipR ouroboros
+
+?loc = fungus_forest
+  ?hp = maxhp | foe.distance <= 23
+    // Healed completely or enemy too close
+    03_mushroom_forest_equip_staff()
+  :
+    // Try to heal while attacking from afar
+    03_mushroom_forest_equip_ranged_healing()
+  ?hp <= 10
+    activate potion
+  loadouts_healwalk()
+
+?loc = fungus_forest_boss  // Boss room
+  ?foe = mushroom_boss_skinny  // Enoki
+    03_mushroom_forest_equip_staff()
+  :?foe = mushroom_boss // Angry or Morel
+    ?foe.distance >= 6
+      // Morel's hand keeps you at distance 5
+      03_mushroom_forest_equip_dashing()
+    :?foe.armor > 0
+      03_mushroom_forest_equip_armor_piercing()
+    :
+      03_mushroom_forest_equip_melee()
+  ?hp <= 10
+    activate potion
+  loadouts_healwalk()
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Haunted Halls
+*/
+
+
+func 04_haunted_halls_equip_melee()
+  equipL sword *10 +7
+  equipR shield *10 vigor
+
+func 04_haunted_halls_equip_staff()
+  equip staff *8 vigor
+
+?loc = undead_crypt_boss | loc = undead_crypt
+  // Small enemies and boss: same strategy
+  // just keep on using the vigor staff
+  // and heal while walking between enemies
+  04_haunted_halls_equip_staff()
+  ?hp < 10
+    activate potion
+  loadouts_healwalk()
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Boiling Mine
+*/
+
+
+func 05_boiling_mine_equip_melee()
+  equipL sword *9 aether
+  equipR shield *10 aether +3
+
+func 05_boiling_mine_equip_dps()
+  equipL sword *9 aether
+  equipR sword *10
+
+func 05_boiling_mine_equip_dashing()
+  equipL sword *9 aether
+  equipR shield *10 dashing
+
+func 05_boiling_mine_equip_ranged_healing()
+  equipL crossbow *10
+  equipR ouroboros
+  
+func 05_boiling_mine_equip_ranged_shield()
+  equipL crossbow *10
+  equipR shield *10 aether +3
+
+func 05_boiling_mine_equip_armor_piercing()
+  equipL warhammer *10 poison +5
+  equipR warhammer *10 +8
+
+?loc = mine
+  // Small enemies
+  ?foe = master
+  ^ | foe = elemental
+  ^ | foe = geyser
+  ^ | foe = walker
+    ?foe.distance > 8
+      05_boiling_mine_equip_dashing()
+    :?foe.armor > 0
+      05_boiling_mine_equip_armor_piercing()
+    :
+      05_boiling_mine_equip_melee()
+  :?hp < 10
+    activate potion
+  loadouts_healwalk()
+
+?loc = bronze_guardian
+  ?time > 600 & foe.distance > 10
+    // Guardian is now attackable from afar
+    05_boiling_mine_equip_ranged_shield()
+  ?pos.y > 0 & foe.distance > 5
+    // Guardian hits, we jump on its hand
+    05_boiling_mine_equip_dashing()
+  :?foe.distance <= 5
+    // We are on its arm, close to its face
+    ?foe.armor > 0
+      05_boiling_mine_equip_armor_piercing()
+    :
+      05_boiling_mine_equip_dps()
+  :?hp < 10
+    activate potion
+  loadouts_healwalk()
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Icy Ridge
+*/
+
+
+func 06_icy_ridge_equip_melee()
+  equipL sword *10 +7
+  equipR shield *10 poison
+
+func 06_icy_ridge_equip_dps()
+  equipL sword *9 aether +4
+  equipR sword *10 +7
+
+func 06_icy_ridge_equip_dashing()
+  equipL sword *9
+  equipR shield *10 dashing
+
+func 06_icy_ridge_equip_staff()
+  equip staff *10 fire +3
+
+func 06_icy_ridge_equip_ranged_healing()
+  equipL crossbow *10
+  equipR ouroboros
+  
+func 06_icy_ridge_equip_ranged_shield()
+  equipL crossbow *10
+  equipR shield *10 poison +3
+
+func 06_icy_ridge_equip_armor_piercing()
+  equipL warhammer *10 poison +5
+  equipR warhammer *10 +8
+
+var hrminir_encountered = false
+  
+?loc = icy_ridge
+  // Small enemies
+  ?foe = elemental | foe = ki
+    ?hp = maxhp | foe.distance <= 23
+      // Healed completely or enemy too close
+      06_icy_ridge_equip_staff()
+    :
+      // Try to heal while attacking from afar
+      06_icy_ridge_equip_ranged_healing()
+  :?foe = pillar | foe = ice_wall
+    ?foe.distance <= 5
+      equip blade_of_god
+      ?hrminir_encountered &
+      ^ item.GetCooldown("blade_of_god") <= 0
+        // Hit the wall and the boss
+        // behind it as well. Don't use `R`
+        // before the boss to avoid waiting
+        // for the cooldown.
+        activate R
+    :
+      06_icy_ridge_equip_dashing()
+
+  // Hrímnir
+  :?foe = boss
+    hrminir_encountered = true
+    ?foe.distance <= 2
+      ?foe.armor > 0
+        06_icy_ridge_equip_armor_piercing()
+      :
+        06_icy_ridge_equip_dps()
+    :?foe.distance <= 5
+      // The shovel has an attack range of 1
+      // so it forces the player to move very
+      // very close. So close that it can avoid
+      // the attacks (snowballs)
+      equip shovel
+    :?foe.distance > 5
+      06_icy_ridge_equip_dashing()
+
+  loadouts_healwalk()
+
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Level: Temple
+*/
+
+
+?loc = temple
+  equip staff *8 ice
+  ?hp <= 10
+    activate potion
+
+?loc = nagaraja
+  equip blade_of_god
+  ?hp <= 10 | debuffs.count >= 8
+    activate potion
