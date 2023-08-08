@@ -132,7 +132,8 @@ def itemize(line, weapon_cache):
                     weaponR = get_weapon(temp_cache, elem, "ranged.1h", 'melee.1h', 'melee.hammer', 'shields.armor', 'shields.dashing', )
                     weapons = [weaponL, weaponR]
                     gen = "equip_2_weapons"
-            line = line.replace(f"{match.group(0)}", f"{gen}({', '.join(weapons)})")
+            weapon_string = '"' + '", "'.join(weapons) + '"'
+            line = line.replace(f"{match.group(0)}", f"{gen}({weapon_string})")
     return line
 
 def parse_line(s):
