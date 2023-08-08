@@ -282,9 +282,20 @@ def main():
             funcs[result[1]] = new_func_name
         else:
             out.append(sanitize_main_line(line, funcs, imported_vars, weapon_cache))
+    
+    clean_out = []
+    comment = False
+    for line in out:
+        if line.startswith('/*'):
+            comment = True
+        if not comment:
+            clean_out.append(line)
+        if line.startswith('*/'):
+            comment = False
+        
 
     with open("compiled.txt", mode="w") as f:
-        f.write("\n".join(out))
+        f.write("\n".join(clean_out))
 
 
 if __name__ == "__main__":

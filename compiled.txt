@@ -1,11 +1,3 @@
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Sets of weapons abstracted away as nicely
-named functions.
-*/
 
 func equip_1_weapon(weapon)
   equip @weapon@
@@ -29,68 +21,7 @@ func healwalk()
     :
       equip_2_weapons(triskelion, compound shield *4 + 1)
 
-/*
-func equip_2_weapons(ouroboros, compound shield *4 + 1)
-  equipL ouroboros
-  equipR {shields.armor}
 
-func equip_2_weapons(triskelion, compound shield *4 + 1)
-  equipL triskelion
-  equipR {shields.armor}
-  
-func equip_2_weapons(star, compound shield *4 + 1)
-  equipL star
-  equipR {shields.armor}
-
-func equip_2_weapons(big stone sword *4 + 1, compound shield *4 + 1)
-  equipL {melee.1h}
-  equipR {shields.armor}
-
-func equip_2_weapons(big stone sword *4 + 1, crossbow *1 + 3 fire)
-  equipL {melee.1h}
-  equipR {melee.1h}
-
-func equip_2_weapons(big stone sword *4 + 1, crossbow *1 + 3 fire)
-  equip {melee.staff}
-
-func equip_2_weapons(big stone sword *4 + 1, crossbow *1 + 3 fire)
-  equipL {melee.1h}
-  equipR {shields.dashing}
-
-func equip_2_weapons(big stone sword *4 + 1, crossbow *1 + 3 fire)
-  equipL {melee.hammer}
-  equipR {melee.hammer}
-
-func equip_2_weapons(crossbow *1 + 3 fire, ouroboros)
-  equipL {ranged.1h}
-  equipR ouroboros
-  
-func equip_2_weapons(crossbow *1 + 3 fire, compound shield *4 + 1)
-  equipL {ranged.1h}
-  equipR {shields.armor}
-
-func equip_2_weapons(crossbow *1 + 3 fire, wand *3 vigor)
-  equip {ranged.2h}
-*/
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-FOR GAME VERSION v3.14.2 as of 2022-04-25
-
-Keep lines at 48 characters at most, because
-that is the line length of the mind stone UI
-within the game.
-*/
-
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Rocky plateau
-*/
 
 ?loc = rocky
   equip shovel
@@ -117,13 +48,6 @@ Level: Rocky plateau
     // armor combined
     ?(hp + armor) < 31
       activate potion
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Deadwood canyon
-*/
 
 ?loc = deadwood
   // Small enemies
@@ -153,13 +77,6 @@ Level: Deadwood canyon
     ?harvest.distance <= 4
     ^& item.GetCooldown("hatchet") <= 0
       activate R
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Caves of fear
-*/
 
 ?loc = caves
   ?foe ! boss  // Small enemies
@@ -178,13 +95,6 @@ Level: Caves of fear
     activate potion
 
   healwalk()
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Mushroom Forest
-*/
 
 ?loc = fungus_forest
   ?hp = maxhp | foe.distance <= 23
@@ -211,13 +121,6 @@ Level: Mushroom Forest
   ?hp <= 10
     activate potion
   healwalk()
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Haunted Halls
-*/
 
 ?loc = undead_crypt_boss | loc = undead_crypt
   ?foe ! boss  // Small enemies
@@ -230,13 +133,6 @@ Level: Haunted Halls
     activate potion
 
   healwalk()
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Boiling Mine
-*/
 
 ?loc = mine
   // Small enemies
@@ -270,13 +166,6 @@ Level: Boiling Mine
   :?hp < 10
     activate potion
   healwalk()
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Icy Ridge
-*/
 
 var hrminir_encountered = false
   
@@ -321,13 +210,6 @@ var hrminir_encountered = false
 
   healwalk()
 
-/*
-Copyright © 2019-2022, Matjaž Guštin
-<dev@matjaz.it> <https://matjaz.it>
-Released under the BSD 3-clause license.
-
-Level: Temple
-*/
 
 
 ?loc = temple
