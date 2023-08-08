@@ -37,30 +37,11 @@ Level: Boiling Mine
       ?foe.distance<=6 & hp>=30 & foe.armor>0
         equip he
     ?foe.state ! 33 & foe.state ! 32 &
-      ^item.getcooldown(＂hammer＂)<=646
+      ^item.getcooldown("hammer")<=646
       equip rep
     ?foe = boss & foe.distance <= 20 &
-    ^item.GetCooldown(＂hammer＂) <=0
+    ^item.GetCooldown("hammer") <=0
       equip hea
-      ?item.CanActivate(＂hammer＂)
+      ?item.CanActivate("hammer")
         activate R
-
-
-
-  // ?time > 600 & foe.distance > 10
-  //   // Guardian is now attackable from afar
-  //   equip_ranged_shield("aether")
-  // ?foe.state=32 & foe.time=22
-  //   equipR mind stone
-  // ?pos.y > 0 & foe.distance > 5
-  //   // Guardian hits, we jump on its hand
-  //   equip_dashing("aether")
-  // :?foe.distance <= 5
-  //   // We are on its arm, close to its face
-  //   ?foe.armor > 0
-  //     equip_armor_piercing("aether")
-  //   :
-  //     equip_dps_melee("aether")
-  // :?hp < 10
-  //   activate potion
   healwalk()

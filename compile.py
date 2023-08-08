@@ -320,7 +320,7 @@ def sanitize_main_line(line, funcs, imported_vars, weapon_cache):
 def load_items():
     matches = {}
     weapon_cache = defaultdict(list)
-    with open("weapons.conf") as f:
+    with open("weapons.conf", encoding="utf-8") as f:
         for ln, line in enumerate(f.read().splitlines()):
             if not line:
                 continue
@@ -372,7 +372,7 @@ def main():
     for fn in sorted(os.listdir()):
         splt = os.path.splitext(fn)
         if splt[1] == ".txt":
-            with open(fn) as f:
+            with open(fn, encoding="utf-8") as f:
                 modules[splt[0]] = f.read().splitlines()
 
     # process loadouts.txt
@@ -408,7 +408,7 @@ def main():
                 submodules.add(result[1])
                 imported_vars.add(result[2])
             elif result[0] == "func":
-                new_func_name = f"{mod_name}_{result[1]}"
+                new_func_name = f"{mod_name[3:]}_{result[1]}"
                 sanitized_module.append(line.replace(result[1], new_func_name))
                 funcs[result[1]] = new_func_name
             else:
@@ -442,7 +442,7 @@ def main():
             out.extend(modules[result[1]])
             imported_vars.add(result[2])
         elif result[0] == "func":
-            new_func_name = f"{result[1]}_{mod_name}"
+            new_func_name = f"{result[1][3:]}_{mod_name}"
             out.append(line.replace(result[1], new_func_name))
             funcs[result[1]] = new_func_name
         else:
@@ -458,7 +458,7 @@ def main():
         if line.startswith("*/"):
             comment = False
 
-    with open("compiled.txt", mode="w") as f:
+    with open("compiled.txt", mode="w", encoding="utf-8") as f:
         f.write("\n".join(clean_out))
 
 

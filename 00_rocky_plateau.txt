@@ -6,38 +6,42 @@ Released under the BSD 3-clause license.
 Level: Rocky plateau
 */
 
+func ElementSwitcher()
+  ?foe = aether
+    equipL vigor hammer
+  :?foe = fire
+    equipL aether hammer
+  :?foe = ice
+    equipL fire sword
+  :?foe = poison
+    equipL ice hammer
+  :?foe = vigor
+    equipL poison sword
+  :
+    equipL fire sword
+
+func DebuffApplier()
+  ?foe.buffs.string ="buff_protection"
+    ElementSwitcher()
+  :?foe.debuffs.string = "∞:debuff_damage:1:"| foe = immune_to_debuff_damage
+    ?foe.debuffs.string = "φ:debuff_dot:1:"| foe = immune_to_debuff_dot
+      ?foe.debuffs.string = "❄:debuff_chill:6:"| foe = immune_to_debuff_chill
+        ElementSwitcher()
+      :
+        equipL ice hammer
+    :
+      equipL fire sword
+  :
+    equipL poison sword
+
 ?loc = rocky
-  equip shovel
   healwalk()
-
-  // Boss: Dysangelos, phase 1 (base form)
-  ?foe = dysangelos_bearer
-    equip_1h_melee()
-
-  // Boss: Dysangelos, phase 2 (elemental form)
-  ?foe = dysangelos_elementalist
-    equip_1h_melee()
-    ?foe = aether
-      equip_1h_melee("vigor")
-    :?foe = fire
-      equip_1h_melee("aether")
-    :?foe = ice
-      equip_1h_melee("fire")
-    :?foe = poison
-      equip_1h_melee("ice")
-    :?foe = vigor
-      equip_1h_melee("poison")
-
-  // Boss: Dysangels, phase 3 (perfect form)
-  ?foe = dysangelos_perfected
-    equip_1h_melee()
-    ?foe.armor > 0
-      equip_armor_piercing()
-    // Their most powerful move deals 30 damage
-    // points on 5* difficulty, so we need to
-    // heal if we don't have enough health and
-    // armor combined
-    ?(hp + armor) < 31
-      activate potion
-    ?foe.state=115 & foe.time=50
-      equip mind stone
+  ?foe = boss
+    equipL fire sword
+    equipR stone shield *6
+  ?foe.distance <= 5
+    DebuffApplier()
+  ?(hp + armor) < 31
+    activate potion
+  ?foe.state=115 & foe.time=60
+    equipL mind stone

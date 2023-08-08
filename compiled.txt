@@ -23,41 +23,45 @@ func healwalk()
 
 
 
+func rocky_plateau_ElementSwitcher()
+  ?foe = aether
+    equipL vigor hammer
+  :?foe = fire
+    equipL aether hammer
+  :?foe = ice
+    equipL fire sword
+  :?foe = poison
+    equipL ice hammer
+  :?foe = vigor
+    equipL poison sword
+  :
+    equipL fire sword
+
+func rocky_plateau_DebuffApplier()
+  ?foe.buffs.string ="buff_protection"
+    rocky_plateau_ElementSwitcher()
+  :?foe.debuffs.string = "∞:debuff_damage:1:"| foe = immune_to_debuff_damage
+    ?foe.debuffs.string = "φ:debuff_dot:1:"| foe = immune_to_debuff_dot
+      ?foe.debuffs.string = "❄:debuff_chill:6:"| foe = immune_to_debuff_chill
+        rocky_plateau_ElementSwitcher()
+      :
+        equipL ice hammer
+    :
+      equipL fire sword
+  :
+    equipL poison sword
+
 ?loc = rocky
-  equip shovel
   healwalk()
-
-  // Boss: Dysangelos, phase 1 (base form)
-  ?foe = dysangelos_bearer
-    equip_2_weapons("fire sword *4", "stone shield *6")
-
-  // Boss: Dysangelos, phase 2 (elemental form)
-  ?foe = dysangelos_elementalist
-    equip_2_weapons("fire sword *4", "stone shield *6")
-    ?foe = aether
-      equip_2_weapons("vigor hammer *3", "stone shield *6")
-    :?foe = fire
-      equip_2_weapons("aether hammer *3", "stone shield *6")
-    :?foe = ice
-      equip_2_weapons("fire sword *4", "stone shield *6")
-    :?foe = poison
-      equip_2_weapons("ice hammer *3", "stone shield *6")
-    :?foe = vigor
-      equip_2_weapons("poison sword *4", "stone shield *6")
-
-  // Boss: Dysangels, phase 3 (perfect form)
-  ?foe = dysangelos_perfected
-    equip_2_weapons("fire sword *4", "stone shield *6")
-    ?foe.armor > 0
-      equip_2_weapons("vigor hammer *3", "aether hammer *3")
-    // Their most powerful move deals 30 damage
-    // points on 5* difficulty, so we need to
-    // heal if we don't have enough health and
-    // armor combined
-    ?(hp + armor) < 31
-      activate potion
-    ?foe.state=115 & foe.time=50
-      equip mind stone
+  ?foe = boss
+    equipL fire sword
+    equipR stone shield *6
+  ?foe.distance <= 5
+    rocky_plateau_DebuffApplier()
+  ?(hp + armor) < 31
+    activate potion
+  ?foe.state=115 & foe.time=60
+    equipL mind stone
 
 ?loc = deadwood
   // Small enemies
@@ -175,32 +179,13 @@ func healwalk()
       ?foe.distance<=6 & hp>=30 & foe.armor>0
         equip he
     ?foe.state ! 33 & foe.state ! 32 &
-      ^item.getcooldown(＂hammer＂)<=646
+      ^item.getcooldown("hammer")<=646
       equip rep
     ?foe = boss & foe.distance <= 20 &
-    ^item.GetCooldown(＂hammer＂) <=0
+    ^item.GetCooldown("hammer") <=0
       equip hea
-      ?item.CanActivate(＂hammer＂)
+      ?item.CanActivate("hammer")
         activate R
-
-
-
-  // ?time > 600 & foe.distance > 10
-  //   // Guardian is now attackable from afar
-  //   equip_2_weapons("aether hammer *3", "stone shield *6")
-  // ?foe.state=32 & foe.time=22
-  //   equipR mind stone
-  // ?pos.y > 0 & foe.distance > 5
-  //   // Guardian hits, we jump on its hand
-  //   equip_2_weapons("aether hammer *3", "dashing shield *4")
-  // :?foe.distance <= 5
-  //   // We are on its arm, close to its face
-  //   ?foe.armor > 0
-  //     equip_2_weapons("aether hammer *3", "vigor hammer *3")
-  //   :
-  //     equip_2_weapons("aether hammer *3", "fire sword *4")
-  // :?hp < 10
-  //   activate potion
   healwalk()
 
 var hrminir_encountered = false
