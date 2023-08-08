@@ -21,11 +21,59 @@ weapon_re = re.compile(
 
 
 weapon_aliases = {
-    "melee.1h": ["stone sword", "sword", "big stone sword", "war hammer"],
-    "shields.armor": ["stone shield", "shield", "compound shield"],
-    "melee.hammer": ["warhammer"],
-    "melee.staff": ["staff"],
-    "ranged.1h": ["fire crossbow", "stone crossbow", "crossbow", "wand", "stone wand"],
+    "melee.1h": [
+        "poison sword",
+        "fire sword",
+        "ice sword",
+        "aether sword",
+        "vigor sword",
+        "stone sword",
+        "sword",
+        "big stone sword",
+        "war hammer",
+    ],
+    "shields.armor": [
+        "poison shield",
+        "fire shield",
+        "ice shield",
+        "aether shield",
+        "vigor shield",
+        "stone shield",
+        "shield",
+        "compound shield",
+    ],
+    "melee.hammer": [
+        "poison hammer",
+        "fire hammer",
+        "ice hammer",
+        "aether hammer",
+        "vigor hammer",
+        "stone hammer",
+        "war hammer",
+    ],
+    "melee.staff": [
+        "poison staff",
+        "fire staff",
+        "ice staff",
+        "aether staff",
+        "vigor staff",
+        "staff",
+    ],
+    "ranged.1h": [
+        "poison crossbow",
+        "fire crossbow",
+        "ice crossbow",
+        "aether crossbow",
+        "vigor crossbow",
+        "stone crossbow",
+        "crossbow",
+        "poison wand",
+        "fire wand",
+        "ice wand",
+        "aether wand",
+        "vigor wand",
+        "stone wand",
+    ],
     "ranged.2h": ["repeating crossbow"],
     "shields.dashing": ["dashing shield"],
 }
@@ -274,7 +322,9 @@ def load_items():
                 print(f"failed to parse weapon.conf: line {ln}: `{line}`")
                 continue
             matches[match.group("name")] = match
-            if not any(match.group("name") in weapon_aliases[cat] for cat in weapon_aliases):
+            if not any(
+                match.group("name") in weapon_aliases[cat] for cat in weapon_aliases
+            ):
                 print(f"unknown weapon type: line {ln}: `{line}`")
     for category, aliases in weapon_aliases.items():
         for alias in aliases:
@@ -282,7 +332,7 @@ def load_items():
                 match = matches[alias]
                 elem = match.group("elem")
                 if elem is None:
-                    for el in ('fire', 'ice', 'aether', 'poison', 'vigor'):
+                    for el in ("fire", "ice", "aether", "poison", "vigor"):
                         if match.group("name").startswith(el):
                             elem = el
                             break
@@ -290,14 +340,16 @@ def load_items():
                     match.group(0),
                     int(match.group("level")),
                     int(match.group("ench") or 0),
-                    elem
+                    elem,
                 )
                 weapon_cache[f"{category}"].append(sig)
     for req in ("melee.1h", "shields.armor"):
         if req not in weapon_cache:
             raise RuntimeError(f"Missing at least one weapon in category `{req}`")
     for k, v in weapon_cache.items():
-        weapon_cache[k] = sorted(v, key=lambda weapon: weapon[1] + weapon[2] + int(bool(weapon[3])))
+        weapon_cache[k] = sorted(
+            v, key=lambda weapon: weapon[1] + weapon[2] + int(bool(weapon[3]))
+        )
     return weapon_cache
 
 
