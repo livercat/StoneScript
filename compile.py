@@ -16,7 +16,7 @@ func_re = re.compile("func (?P<name>.+?)\(.*?\)")
 
 equip_re = re.compile("equip(L|R)?\s+\{(?P<category>.+)\.(?P<spec>.+)\}")
 weapon_re = re.compile(
-    "(?P<name>.+?)\s+\*(?P<level>\d+)(\s*\+\s+(?P<ench>\d+))?(\s+(?P<elem>.+))?"
+    "(?P<name>.+?)\s+\*(?P<level>\d+)(\s*\+\s*(?P<ench>\d+))?(\s+(?P<elem>.+))?"
 )
 
 
@@ -25,7 +25,7 @@ weapon_aliases = {
     "shields.armor": ["stone shield", "shield", "compound shield"],
     "melee.hammer": ["warhammer"],
     "melee.staff": ["staff"],
-    "ranged.1h": ["crossbow", "wand", "stone wand"],
+    "ranged.1h": ["fire crossbow", "stone crossbow", "crossbow", "wand", "stone wand"],
     "ranged.2h": ["repeating crossbow"],
     "shields.dashing": ["dashing shield"],
 }
@@ -47,27 +47,21 @@ generic_functions = {
 
 def get_weapon(weapon_cache, elem, *args):
     for arg in args:
-        elem_arg = f"{arg}.{elem}"
-        elem_weapon = None
-        weapon = None
-        if elem_arg in weapon_cache:
-            elem_weapons = weapon_cache[elem_arg]
-            if elem_weapons:
-                elem_weapon = elem_weapons[-1]
-        if arg in weapon_cache:
-            weapons = weapon_cache[arg]
-            if weapons:
-                weapon = weapons[-1]
-        if weapon is None and elem_weapon is None:
+        if arg not in weapon_cache or len(weapon_cache[arg]) == 0:
             continue
-        if weapon is None and elem_weapon is not None:
-            return elem_weapons.pop()[0]
-        if weapon is not None and elem_weapon is None:
-            return weapons.pop()[0]
-        if (weapon[1] + weapon[2]) > (elem_weapon[1] + elem_weapon[2]):
-            return weapons.pop()[0]
+        elem_weapon = None
+        weapons = weapon_cache[arg]
+        for i, weapon in enumerate(reversed(weapons)):
+            if elem and weapon[3] == elem:
+                if i == 0:
+                    return weapons.pop()[0]
+                elem_weapon = weapon
+        weapon = weapons[-1]
+        if elem_weapon and (elem_weapon[1] + elem_weapon[2]) >= (weapon[1] + weapon[2]):
+            weapons.remove(elem_weapon)
+            return elem_weapon[0]
         else:
-            return elem_weapons.pop()[0]
+            return weapons.pop()[0]
     return ""
 
 
@@ -75,6 +69,7 @@ def itemize(line, weapon_cache):
     for spec, gen in generic_functions.items():
         for match in re.finditer(f"{spec}\((?P<elem>.*?)\)", line):
             elem = match.group("elem")
+            elem = elem.strip('"') if elem else ""
             weapons = []
             temp_cache = deepcopy(weapon_cache)
             if spec == "equip_ouroboros":
@@ -279,29 +274,30 @@ def load_items():
                 print(f"failed to parse weapon.conf: line {ln}: `{line}`")
                 continue
             matches[match.group("name")] = match
+            if not any(match.group("name") in weapon_aliases[cat] for cat in weapon_aliases):
+                print(f"unknown weapon type: line {ln}: `{line}`")
     for category, aliases in weapon_aliases.items():
         for alias in aliases:
             if alias in matches:
                 match = matches[alias]
-                sig = (
-                    match.group(0),
-                    int(match.group("level")),
-                    int(match.group("ench") or 0),
-                )
-                weapon_cache[f"{category}"].append(sig)
                 elem = match.group("elem")
                 if elem is None:
                     for el in ('fire', 'ice', 'aether', 'poison', 'vigor'):
                         if match.group("name").startswith(el):
                             elem = el
                             break
-                if elem is not None:
-                    weapon_cache[f"{category}.{elem}"].append(sig)
+                sig = (
+                    match.group(0),
+                    int(match.group("level")),
+                    int(match.group("ench") or 0),
+                    elem
+                )
+                weapon_cache[f"{category}"].append(sig)
     for req in ("melee.1h", "shields.armor"):
         if req not in weapon_cache:
-            raise RuntimeError("Missing at least one weapon in category `req`")
+            raise RuntimeError(f"Missing at least one weapon in category `{req}`")
     for k, v in weapon_cache.items():
-        weapon_cache[k] = sorted(v, key=lambda weapon: weapon[1] + weapon[2])
+        weapon_cache[k] = sorted(v, key=lambda weapon: weapon[1] + weapon[2] + int(bool(weapon[3])))
     return weapon_cache
 
 
@@ -311,6 +307,7 @@ def main():
 
     # load available items
     weapon_cache = load_items()
+    print(weapon_cache)
 
     # read all modules
     for fn in sorted(os.listdir()):
