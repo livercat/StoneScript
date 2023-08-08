@@ -29,19 +29,27 @@ func healwalk()
 
   // Boss: Dysangelos, phase 1 (base form)
   ?foe = dysangelos_bearer
-    equip_2_weapons("stone sword *6", "stone shield *6")
+    equip_2_weapons("fire sword *4", "stone shield *6")
 
   // Boss: Dysangelos, phase 2 (elemental form)
   ?foe = dysangelos_elementalist
-    equip_2_weapons("stone sword *6", "stone shield *6")
-    // TODO use the proper runes against
-    // the current rune in the eye of the boss
+    equip_2_weapons("fire sword *4", "stone shield *6")
+    ?foe = aether
+      equip_2_weapons("vigor hammer *3", "stone shield *6")
+    :?foe = fire
+      equip_2_weapons("aether hammer *3", "stone shield *6")
+    :?foe = ice
+      equip_2_weapons("fire sword *4", "stone shield *6")
+    :?foe = poison
+      equip_2_weapons("ice hammer *3", "stone shield *6")
+    :?foe = vigor
+      equip_2_weapons("poison sword *4", "stone shield *6")
 
   // Boss: Dysangels, phase 3 (perfect form)
   ?foe = dysangelos_perfected
-    equip_2_weapons("stone sword *6", "stone shield *6")
+    equip_2_weapons("fire sword *4", "stone shield *6")
     ?foe.armor > 0
-      equip_2_weapons("aether hammer *3", "stone sword *6")
+      equip_2_weapons("vigor hammer *3", "aether hammer *3")
     // Their most powerful move deals 30 damage
     // points on 5* difficulty, so we need to
     // heal if we don't have enough health and
@@ -55,16 +63,16 @@ func healwalk()
     ?foe.distance >= 5
       equip_1_weapon("stone crossbow *6")
     :
-      equip_2_weapons("stone sword *6", "stone shield *6")
+      equip_2_weapons("fire sword *4", "stone shield *6")
   :?foe = scarab
-    equip_2_weapons("stone sword *6", "stone shield *6")
+    equip_2_weapons("fire sword *4", "stone shield *6")
   :?foe = boss | foe = poena
     // Boss: Xyaloalgia, residue of Leuce
     // and Poena, its phase 2
     ?foe.distance >= 8
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("fire sword *4", "dashing shield *4")
     :
-      equip_2_weapons("stone sword *6", "stone shield *6")
+      equip_2_weapons("fire sword *4", "stone shield *6")
   ?hp <= 10
     activate potion
 
@@ -82,15 +90,15 @@ func healwalk()
   ?foe ! boss  // Small enemies
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_1_weapon("poison staff *4")
+      equip_2_weapons("fire sword *4", "poison sword *4")
     :
       // Try to heal while attacking from afar
-      equip_2_weapons("crossbow *6", "ouroboros")
+      equip_2_weapons("fire sword *4", "ouroboros")
   :?foe = boss  // Bolesh, the cunning
     ?foe.distance > 10
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("fire sword *4", "dashing shield *4")
     :
-      equip_2_weapons("stone sword *6", "stone shield *6")
+      equip_2_weapons("fire sword *4", "stone shield *6")
   :?hp < 10
     activate potion
 
@@ -99,25 +107,25 @@ func healwalk()
 ?loc = fungus_forest
   ?hp = maxhp | foe.distance <= 23
     // Healed completely or enemy too close
-    equip_2_weapons("stone sword *6", "aether hammer *3")
+    equip_2_weapons("poison sword *4", "fire sword *4")
   :
     // Try to heal while attacking from afar
-    equip_2_weapons("crossbow *6", "ouroboros")
+    equip_2_weapons("poison sword *4", "ouroboros")
   ?hp <= 10
     activate potion
   healwalk()
 
 ?loc = fungus_forest_boss  // Boss room
   ?foe = mushroom_boss_skinny  // Enoki
-    equip_2_weapons("stone sword *6", "aether hammer *3")
+    equip_2_weapons("poison sword *4", "fire sword *4")
   :?foe = mushroom_boss // Angry or Morel
     ?foe.distance >= 6
       // Morel's hand keeps you at distance 5
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("poison sword *4", "dashing shield *4")
     :?foe.armor > 0
-      equip_2_weapons("aether hammer *3", "stone sword *6")
+      equip_2_weapons("vigor hammer *3", "aether hammer *3")
     :
-      equip_2_weapons("stone sword *6", "stone shield *6")
+      equip_2_weapons("poison sword *4", "stone shield *6")
   ?hp <= 10
     activate potion
   healwalk()
@@ -126,9 +134,9 @@ func healwalk()
   ?foe ! boss  // Small enemies
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_2_weapons("stone sword *6", "aether hammer *3")
+      equip_2_weapons("vigor hammer *3", "fire sword *4")
   :?foe = boss
-    equip_2_weapons("stone sword *6", "aether hammer *3")
+    equip_2_weapons("vigor hammer *3", "fire sword *4")
   :?hp < 10
     activate potion
 
@@ -141,11 +149,11 @@ func healwalk()
   ^ | foe = geyser
   ^ | foe = walker
     ?foe.distance > 8
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("aether hammer *3", "dashing shield *4")
     :?foe.armor > 0
-      equip_2_weapons("aether hammer *3", "stone sword *6")
+      equip_2_weapons("aether hammer *3", "vigor hammer *3")
     :
-      equip_2_weapons("stone sword *6", "stone shield *6")
+      equip_2_weapons("aether hammer *3", "stone shield *6")
   :?hp < 10
     activate potion
   healwalk()
@@ -153,16 +161,16 @@ func healwalk()
 ?loc = bronze_guardian
   ?time > 600 & foe.distance > 10
     // Guardian is now attackable from afar
-    equip_2_weapons("crossbow *6", "stone shield *6")
+    equip_2_weapons("aether hammer *3", "stone shield *6")
   ?pos.y > 0 & foe.distance > 5
     // Guardian hits, we jump on its hand
-    equip_2_weapons("stone sword *6", "dashing shield *4")
+    equip_2_weapons("aether hammer *3", "dashing shield *4")
   :?foe.distance <= 5
     // We are on its arm, close to its face
     ?foe.armor > 0
-      equip_2_weapons("aether hammer *3", "stone sword *6")
+      equip_2_weapons("aether hammer *3", "vigor hammer *3")
     :
-      equip_2_weapons("stone sword *6", "aether hammer *3")
+      equip_2_weapons("aether hammer *3", "fire sword *4")
   :?hp < 10
     activate potion
   healwalk()
@@ -174,10 +182,10 @@ var hrminir_encountered = false
   ?foe = elemental | foe = ki
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_2_weapons("stone sword *6", "aether hammer *3")
+      equip_2_weapons("fire sword *4", "poison sword *4")
     :
       // Try to heal while attacking from afar
-      equip_2_weapons("crossbow *6", "ouroboros")
+      equip_2_weapons("fire sword *4", "ouroboros")
   :?foe = pillar | foe = ice_wall
     ?foe.distance <= 5
       equip blade_of_god
@@ -189,16 +197,16 @@ var hrminir_encountered = false
         // for the cooldown.
         activate R
     :
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("fire sword *4", "dashing shield *4")
 
   // Hrímnir
   :?foe = boss
     hrminir_encountered = true
     ?foe.distance <= 2
       ?foe.armor > 0
-        equip_2_weapons("aether hammer *3", "stone sword *6")
+        equip_2_weapons("vigor hammer *3", "aether hammer *3")
       :
-        equip_2_weapons("stone sword *6", "aether hammer *3")
+        equip_2_weapons("fire sword *4", "poison sword *4")
     :?foe.distance <= 5
       // The shovel has an attack range of 1
       // so it forces the player to move very
@@ -206,14 +214,14 @@ var hrminir_encountered = false
       // the attacks (snowballs)
       equip shovel
     :?foe.distance > 5
-      equip_2_weapons("stone sword *6", "dashing shield *4")
+      equip_2_weapons("fire sword *4", "dashing shield *4")
 
   healwalk()
 
 
 
 ?loc = temple
-  equip_2_weapons("stone sword *6", "aether hammer *3")
+  equip_2_weapons("ice hammer *3", "fire sword *4")
   ?hp <= 10
     activate potion
 

@@ -17,8 +17,16 @@ Level: Rocky plateau
   // Boss: Dysangelos, phase 2 (elemental form)
   ?foe = dysangelos_elementalist
     equip_1h_melee()
-    // TODO use the proper runes against
-    // the current rune in the eye of the boss
+    ?foe = aether
+      equip_1h_melee("vigor")
+    :?foe = fire
+      equip_1h_melee("aether")
+    :?foe = ice
+      equip_1h_melee("fire")
+    :?foe = poison
+      equip_1h_melee("ice")
+    :?foe = vigor
+      equip_1h_melee("poison")
 
   // Boss: Dysangels, phase 3 (perfect form)
   ?foe = dysangelos_perfected

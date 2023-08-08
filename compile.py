@@ -29,7 +29,12 @@ weapon_aliases = {
         "vigor sword",
         "stone sword",
         "sword",
-        "big stone sword",
+        "poison hammer",
+        "fire hammer",
+        "ice hammer",
+        "aether hammer",
+        "vigor hammer",
+        "stone hammer",
         "war hammer",
     ],
     "shields.armor": [
@@ -107,7 +112,7 @@ def get_weapon(weapon_cache, elem, *args):
                     return weapons.pop()[0]
                 elem_weapon = weapon
         weapon = weapons[-1]
-        if elem_weapon and (elem_weapon[1] + elem_weapon[2]) >= (weapon[1] + weapon[2]):
+        if elem_weapon and (elem_weapon[1] + elem_weapon[2]) >= (weapon[1] + weapon[2] - 1):
             weapons.remove(elem_weapon)
             return elem_weapon[0]
         else:
