@@ -41,7 +41,7 @@ func healwalk()
   ?foe = dysangelos_perfected
     equip_2_weapons("stone sword *6", "stone shield *6")
     ?foe.armor > 0
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     // Their most powerful move deals 30 damage
     // points on 5* difficulty, so we need to
     // heal if we don't have enough health and
@@ -53,7 +53,7 @@ func healwalk()
   // Small enemies
   ?foe = mosquito
     ?foe.distance >= 5
-      equip_2_weapons("stone wand *6", "crossbow *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
       equip_2_weapons("stone sword *6", "stone shield *6")
   :?foe = scarab
@@ -70,22 +70,22 @@ func healwalk()
 
   healwalk()
   
-  // ?harvest.distance < 10
-  //   // Cut down trees with the hatchet
-  //   // using the fast-cutting when available
-  //   equip hatchet
-  //   ?harvest.distance <= 4
-  //   ^& item.GetCooldown("hatchet") <= 0
-  //     activate R
+  ?harvest.distance < 10 & res.wood < 100
+    // Cut down trees with the hatchet
+    // using the fast-cutting when available
+    equip hatchet
+    ?harvest.distance <= 3
+    ^& item.GetCooldown("hatchet") <= 0
+      activate R
 
 ?loc = caves
   ?foe ! boss  // Small enemies
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
       // Try to heal while attacking from afar
-      equip_2_weapons("stone wand *6", "ouroboros")
+      equip_2_weapons("stone sword *6", "ouroboros")
   :?foe = boss  // Bolesh, the cunning
     ?foe.distance > 10
       equip_2_weapons("stone sword *6", "dashing shield *4")
@@ -99,23 +99,23 @@ func healwalk()
 ?loc = fungus_forest
   ?hp = maxhp | foe.distance <= 23
     // Healed completely or enemy too close
-    equip_2_weapons("stone sword *6", "stone wand *6")
+    equip_2_weapons("stone sword *6", "stone shield *6")
   :
     // Try to heal while attacking from afar
-    equip_2_weapons("stone wand *6", "ouroboros")
+    equip_2_weapons("stone sword *6", "ouroboros")
   ?hp <= 10
     activate potion
   healwalk()
 
 ?loc = fungus_forest_boss  // Boss room
   ?foe = mushroom_boss_skinny  // Enoki
-    equip_2_weapons("stone sword *6", "stone wand *6")
+    equip_2_weapons("stone sword *6", "stone shield *6")
   :?foe = mushroom_boss // Angry or Morel
     ?foe.distance >= 6
       // Morel's hand keeps you at distance 5
       equip_2_weapons("stone sword *6", "dashing shield *4")
     :?foe.armor > 0
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
       equip_2_weapons("stone sword *6", "stone shield *6")
   ?hp <= 10
@@ -126,9 +126,9 @@ func healwalk()
   ?foe ! boss  // Small enemies
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
   :?foe = boss
-    equip_2_weapons("stone sword *6", "stone wand *6")
+    equip_2_weapons("stone sword *6", "stone shield *6")
   :?hp < 10
     activate potion
 
@@ -143,7 +143,7 @@ func healwalk()
     ?foe.distance > 8
       equip_2_weapons("stone sword *6", "dashing shield *4")
     :?foe.armor > 0
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
       equip_2_weapons("stone sword *6", "stone shield *6")
   :?hp < 10
@@ -153,16 +153,16 @@ func healwalk()
 ?loc = bronze_guardian
   ?time > 600 & foe.distance > 10
     // Guardian is now attackable from afar
-    equip_2_weapons("stone wand *6", "stone shield *6")
+    equip_2_weapons("stone sword *6", "stone shield *6")
   ?pos.y > 0 & foe.distance > 5
     // Guardian hits, we jump on its hand
     equip_2_weapons("stone sword *6", "dashing shield *4")
   :?foe.distance <= 5
     // We are on its arm, close to its face
     ?foe.armor > 0
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
   :?hp < 10
     activate potion
   healwalk()
@@ -174,10 +174,10 @@ var hrminir_encountered = false
   ?foe = elemental | foe = ki
     ?hp = maxhp | foe.distance <= 23
       // Healed completely or enemy too close
-      equip_2_weapons("stone sword *6", "stone wand *6")
+      equip_2_weapons("stone sword *6", "stone shield *6")
     :
       // Try to heal while attacking from afar
-      equip_2_weapons("stone wand *6", "ouroboros")
+      equip_2_weapons("stone sword *6", "ouroboros")
   :?foe = pillar | foe = ice_wall
     ?foe.distance <= 5
       equip blade_of_god
@@ -196,9 +196,9 @@ var hrminir_encountered = false
     hrminir_encountered = true
     ?foe.distance <= 2
       ?foe.armor > 0
-        equip_2_weapons("stone sword *6", "stone wand *6")
+        equip_2_weapons("stone sword *6", "stone shield *6")
       :
-        equip_2_weapons("stone sword *6", "stone wand *6")
+        equip_2_weapons("stone sword *6", "stone shield *6")
     :?foe.distance <= 5
       // The shovel has an attack range of 1
       // so it forces the player to move very
@@ -213,7 +213,7 @@ var hrminir_encountered = false
 
 
 ?loc = temple
-  equip_2_weapons("stone sword *6", "stone wand *6")
+  equip_2_weapons("stone sword *6", "stone shield *6")
   ?hp <= 10
     activate potion
 

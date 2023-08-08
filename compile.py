@@ -21,10 +21,8 @@ weapon_re = re.compile(
 
 
 weapon_aliases = {
-    # required
     "melee.1h": ["stone sword", "sword", "big stone sword", "war hammer"],
     "shields.armor": ["stone shield", "shield", "compound shield"],
-    # optional
     "melee.hammer": ["warhammer"],
     "melee.staff": ["staff"],
     "ranged.1h": ["crossbow", "wand", "stone wand"],
@@ -45,6 +43,7 @@ generic_functions = {
     "equip_star": "equip_2_weapons",
     "equip_ranged_dps": "equip_1_weapon",
 }
+
 
 def get_weapon(weapon_cache, elem, *args):
     for arg in args:
@@ -74,67 +73,168 @@ def get_weapon(weapon_cache, elem, *args):
 
 def itemize(line, weapon_cache):
     for spec, gen in generic_functions.items():
-        for match in re.finditer(f'{spec}\((?P<elem>.*?)\)', line):
-            elem = match.group('elem')
+        for match in re.finditer(f"{spec}\((?P<elem>.*?)\)", line):
+            elem = match.group("elem")
             weapons = []
             temp_cache = deepcopy(weapon_cache)
             if spec == "equip_ouroboros":
-                weaponL = 'ouroboros'
-                weaponR = get_weapon(temp_cache, elem, 'shields.armor', 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h")
+                weaponL = "ouroboros"
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.armor",
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_triskelion":
-                weaponL = 'triskelion'
-                weaponR = get_weapon(temp_cache, elem, 'shields.armor', 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h")
+                weaponL = "triskelion"
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.armor",
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_star":
-                weaponL = 'star'
-                weaponR = get_weapon(temp_cache, elem, 'shields.armor', 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h")
+                weaponL = "star"
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.armor",
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_1h_melee":
-                weaponL = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h")
-                weaponR = get_weapon(temp_cache, elem, 'shields.armor', 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h")
+                weaponL = get_weapon(
+                    temp_cache, elem, "melee.1h", "melee.hammer", "ranged.1h"
+                )
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.armor",
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_dps_melee":
-                weaponL = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h")
-                weaponR = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h", 'shields.armor', 'shields.dashing', )
+                weaponL = get_weapon(
+                    temp_cache, elem, "melee.1h", "melee.hammer", "ranged.1h"
+                )
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                    "shields.armor",
+                    "shields.dashing",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_dashing":
-                weaponL = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h")
-                weaponR = get_weapon(temp_cache, elem, 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h", 'shields.armor', )
+                weaponL = get_weapon(
+                    temp_cache, elem, "melee.1h", "melee.hammer", "ranged.1h"
+                )
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                    "shields.armor",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_armor_piercing":
-                weaponL = get_weapon(temp_cache, elem, 'melee.hammer', 'melee.1h', "ranged.1h")
-                weaponR = get_weapon(temp_cache, elem, 'melee.hammer', 'melee.1h', "ranged.1h", 'shields.armor', 'shields.dashing', )
+                weaponL = get_weapon(
+                    temp_cache, elem, "melee.hammer", "melee.1h", "ranged.1h"
+                )
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "melee.hammer",
+                    "melee.1h",
+                    "ranged.1h",
+                    "shields.armor",
+                    "shields.dashing",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_ranged_healing":
-                weaponL = get_weapon(temp_cache, elem, "ranged.1h", 'melee.1h', 'melee.hammer')
-                weaponR = 'ouroboros'
+                weaponL = get_weapon(
+                    temp_cache, elem, "ranged.1h", "melee.1h", "melee.hammer"
+                )
+                weaponR = "ouroboros"
                 weapons = [weaponL, weaponR]
             elif spec == "equip_ranged_shield":
-                weaponL = get_weapon(temp_cache, elem, "ranged.1h", 'melee.1h', 'melee.hammer')
-                weaponR = get_weapon(temp_cache, elem, 'shields.armor', 'shields.dashing', 'melee.1h', 'melee.hammer', "ranged.1h")
+                weaponL = get_weapon(
+                    temp_cache, elem, "ranged.1h", "melee.1h", "melee.hammer"
+                )
+                weaponR = get_weapon(
+                    temp_cache,
+                    elem,
+                    "shields.armor",
+                    "shields.dashing",
+                    "melee.1h",
+                    "melee.hammer",
+                    "ranged.1h",
+                )
                 weapons = [weaponL, weaponR]
             elif spec == "equip_staff":
-                weapon = get_weapon(weapon_cache, elem, 'melee.staff')
+                weapon = get_weapon(weapon_cache, elem, "melee.staff")
                 if weapon:
                     weapons = [weapon]
                 else:
-                    weaponL = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h")
-                    weaponR = get_weapon(temp_cache, elem, 'melee.1h', 'melee.hammer', "ranged.1h", 'shields.armor', 'shields.dashing', )
+                    weaponL = get_weapon(
+                        temp_cache, elem, "melee.1h", "melee.hammer", "ranged.1h"
+                    )
+                    weaponR = get_weapon(
+                        temp_cache,
+                        elem,
+                        "melee.1h",
+                        "melee.hammer",
+                        "ranged.1h",
+                        "shields.armor",
+                        "shields.dashing",
+                    )
                     weapons = [weaponL, weaponR]
                     gen = "equip_2_weapons"
             elif spec == "equip_ranged_dps":
-                weapon = get_weapon(temp_cache, elem, 'ranged.2h',)
+                weapon = get_weapon(
+                    temp_cache,
+                    elem,
+                    "ranged.2h",
+                )
                 if weapon:
                     weapons = [weapon]
                 else:
-                    weaponL = get_weapon(temp_cache, elem, "ranged.1h", 'melee.1h', 'melee.hammer')
-                    weaponR = get_weapon(temp_cache, elem, "ranged.1h", 'melee.1h', 'melee.hammer', 'shields.armor', 'shields.dashing', )
+                    weaponL = get_weapon(
+                        temp_cache, elem, "ranged.1h", "melee.1h", "melee.hammer"
+                    )
+                    weaponR = get_weapon(
+                        temp_cache,
+                        elem,
+                        "ranged.1h",
+                        "melee.1h",
+                        "melee.hammer",
+                        "shields.armor",
+                        "shields.dashing",
+                    )
                     weapons = [weaponL, weaponR]
                     gen = "equip_2_weapons"
             weapon_string = '"' + '", "'.join(weapons) + '"'
             line = line.replace(f"{match.group(0)}", f"{gen}({weapon_string})")
     return line
+
 
 def parse_line(s):
     match = raw_import_re.match(s)
@@ -190,6 +290,11 @@ def load_items():
                 )
                 weapon_cache[f"{category}"].append(sig)
                 elem = match.group("elem")
+                if elem is None:
+                    for el in ('fire', 'ice', 'aether', 'poison', 'vigor'):
+                        if match.group("name").startswith(el):
+                            elem = el
+                            break
                 if elem is not None:
                     weapon_cache[f"{category}.{elem}"].append(sig)
     for req in ("melee.1h", "shields.armor"):
@@ -198,7 +303,6 @@ def load_items():
     for k, v in weapon_cache.items():
         weapon_cache[k] = sorted(v, key=lambda weapon: weapon[1] + weapon[2])
     return weapon_cache
-
 
 
 def main():
@@ -227,7 +331,9 @@ def main():
             submodules.add(result[1])
             imported_vars.add(result[2])
         else:
-            itemized_module.append(sanitize_line(line, funcs, imported_vars, weapon_cache))
+            itemized_module.append(
+                sanitize_line(line, funcs, imported_vars, weapon_cache)
+            )
     modules[LOADOUTS_SCRIPT_NAME] = itemized_module
 
     submodules = {"loadouts"}
@@ -250,7 +356,9 @@ def main():
                 sanitized_module.append(line.replace(result[1], new_func_name))
                 funcs[result[1]] = new_func_name
             else:
-                sanitized_module.append(sanitize_line(line, funcs, imported_vars, weapon_cache))
+                sanitized_module.append(
+                    sanitize_line(line, funcs, imported_vars, weapon_cache)
+                )
             match = equip_re.search(line)
             if match is not None and match.group("item") not in (
                 "hatchet",
@@ -283,17 +391,16 @@ def main():
             funcs[result[1]] = new_func_name
         else:
             out.append(sanitize_main_line(line, funcs, imported_vars, weapon_cache))
-    
+
     clean_out = []
     comment = False
     for line in out:
-        if line.startswith('/*'):
+        if line.startswith("/*"):
             comment = True
         if not comment:
             clean_out.append(line)
-        if line.startswith('*/'):
+        if line.startswith("*/"):
             comment = False
-        
 
     with open("compiled.txt", mode="w") as f:
         f.write("\n".join(clean_out))
