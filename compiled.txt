@@ -47,7 +47,9 @@ func healwalk()
 
 func equip_offhand(mode)
   ?foe.distance > 6 & 
-  ^item.GetCooldown("dash") <= 0
+  ^item.GetCooldown("dash") <= 0 &
+  ^ai.enabled &
+  ^foe ! dysangelos_perfected // don't dash into ray
     equipR @dashing@
   :?mode = "dps"
     ?_main_hand = melee_dps
@@ -64,6 +66,8 @@ func equip_shield()
     equipR @armor_shield@
 
 func should_slap()
+  ?!ai.enabled
+    return false
   ?foe.distance > 6
     return false
   ?foe = pallas // FIXME
@@ -80,6 +84,8 @@ func slap()
     activate R
 
 func should_hammer()
+  ?!ai.enabled
+    return false
   ?foe.armor <= 0
     return false
   ?foe.distance > 7
@@ -93,6 +99,8 @@ func hammer()
     activate R
 
 func should_smite()
+  ?!ai.enabled
+    return false
   ?foe.distance > 11
     return false
   ?foe = pallas // FIXME
@@ -107,6 +115,8 @@ func smite()
     activate R
 
 func should_bardiche()
+  ?!ai.enabled
+    return false
   ?foe.distance > 9
     return false
   ?foe ! boss
@@ -128,7 +138,7 @@ func melee(mode)
   ?mode = "aoe"
     equip @melee_aoe@
     return
-  ?hp < 20
+  ?hp < (maxhp / 2)
     equip_main_hand(vigor_1h)
   :?foe = aether
     equip_main_hand(vigor_1h)
@@ -167,7 +177,7 @@ func fight(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
       melee(mode)
-    :?foe.count < 3
+    :?foe.count < 3 & foe ! mosquito
       melee(mode)
     :?foe = spawner
       melee(mode)
@@ -223,15 +233,30 @@ func default(mode)
 
 
 ?loc = rocky
-  // disable dashing to avoid the ray
-  var dashing = "stone shield *8"
   healwalk()
-  fight_boss("def")
+  // don't bother debuffing the second phase
+  ?foe = dysangelos_elementalist
+    fight("dps")
+  :?foe = dysangelos_perfected
+    fight_boss("dps")
+  :
+    fight_boss("def")
   ?foe.state = 115 & foe.time = 60
-    equipL mind stone // dodge the ray
+    equipL mind stone // dodge the orb ray
 
 ?loc = deadwood
-  default("def")
+  ?foe.name=Poena
+    // cheese her by staying out of range
+    ?foe.buffs.string="poena_mirror"
+      ranged("dps")
+    :?item.GetCooldown("mind") <=0 &
+    ^foe.distance < 23 & foe.state = 32 & foe.time > 37
+      equipL mind stone
+      equip_shield()
+    :
+      ranged("dps")
+  :
+    default("def")
 
 ?loc = caves
   default("def")
