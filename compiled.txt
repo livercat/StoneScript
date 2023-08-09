@@ -1,5 +1,5 @@
 var armor_shield = "stone shield *8"
-var regen_shield = "stone shield *8"
+var regen_shield = armor_shield
 var dashing = "dashing shield *7"
 
 var fire_1h = "fire sword *7 dF"
@@ -8,15 +8,18 @@ var ice_1h = "ice sword *5 dI"
 var aether_1h = "aether sword *5 D"
 var vigor_1h = "vigor sword *7 dL"
 
-var melee_dps = "vigor sword *7 dL"
-var melee_offhand = "fire sword *7 dF"
-var melee_aoe = "blade of the fallen god"
-
 var elemental = "vigor staff *7"
 var ranged_1h = ""
 var ranged_2h = "repeating crossbow *7"
+
+var hammer = "heavy hammer *7"
+var bardiche = "bardiche *7"
+var blade = "blade of the fallen god"
 var arm = "skeleton arm"
 
+var melee_dps = vigor_1h
+var melee_offhand = fire_1h
+var melee_aoe = blade
 
 var _main_hand = ""
 
@@ -30,7 +33,7 @@ func healwalk()
     equip_shield()
   :?target = waypoint | foe.distance > 22
     var cd = item.GetCooldown("quarterstaff")
-    ?cd <= 0 & item.CanActivate() &
+    ?(cd <= 0 | cd > 185) & item.CanActivate() &
     ^ai.enabled
       equip quarterstaff
       ?item.CanActivate("quarterstaff")
@@ -69,7 +72,7 @@ func should_slap()
     return true
   ?item.GetCooldown("skeleton_arm") > 0
     return false
-  return foe.hp <= 20
+  return (foe.hp + foe.armor) < 32
 
 func slap()
   equip @arm@
@@ -85,7 +88,7 @@ func should_hammer()
   return cd <= 0 | cd >= 647
 
 func hammer()
-  equip heavy hammer
+  equip @hammer@
   ?item.CanActivate("hammer")
     activate R
 
@@ -99,8 +102,21 @@ func should_smite()
   return (foe.count >= 5 | foe = boss)
 
 func smite()
-  equip blade
+  equip @blade@
   ?item.CanActivate("blade")
+    activate R
+
+func should_bardiche()
+  ?foe.distance > 9
+    return false
+  ?foe ! boss
+    return false
+  var cd = item.GetCooldown("bardiche")
+  return cd <= 0 | cd >= 870
+
+func bardiche()
+  equip @bardiche@
+  ?item.CanActivate("bardiche")
     activate R
 
 func equip_main_hand(weapon)
@@ -178,6 +194,8 @@ func fight_boss(mode)
     return // continue to healwalk
   ?should_hammer()
     hammer()
+  :?should_bardiche()
+    bardiche()
   :?foe.buffs.string = "buff_protection"
     fight(mode)
   :?foe.debuffs.string ! "∞:debuff_damage:1:" &
@@ -239,17 +257,19 @@ func default(mode)
   healwalk()
   ?foe ! boss
     return default("def")
-
+  
+  ?foe.armor > 0
+    melee("dps")
   ?foe.distance <= 2
-    default("dps")
+    fight_boss("dps")
   :?foe.distance <= 5
     // The shovel has an attack range of 1
     // so it forces the player to move very
     // very close. So close that it can avoid
     // the attacks (snowballs)
     equip shovel
-  :
-    default("def")
+  : // blown away
+    melee("def")
 
 ?loc = temple | loc = nagaraja
   healwalk()
