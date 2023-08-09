@@ -5,12 +5,12 @@ var dashing = "dashing shield *7"
 var fire_1h = "fire sword *7 dF"
 var poison_1h = "posion sword *7 dP"
 var ice_1h = "ice sword *5 dI"
-var aether_1h = "aether sword *5 D"
+var aether_1h = "aether sword *7 D"
 var vigor_1h = "vigor sword *7 dL"
 
 var elemental = "vigor staff *7"
 var ranged_1h = ""
-var ranged_2h = "repeating crossbow *7"
+var ranged_2h = "repeating crossbow *8"
 
 var bardiche = "bardiche *7"
 var blade = "blade of the fallen god"
@@ -176,7 +176,11 @@ func fight(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
     // medium range, but not marked as ranged
-    ?foe = mine_walker | foe = ice_wall
+    ?foe = mine_walker |
+    // made by hrminir
+    ^foe = ice_wall |
+    // they swarm too much
+    ^foe = ant
       melee(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
