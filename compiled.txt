@@ -12,7 +12,6 @@ var elemental = "vigor staff *7"
 var ranged_1h = ""
 var ranged_2h = "repeating crossbow *7"
 
-var hammer = "heavy hammer *7"
 var bardiche = "bardiche *7"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
@@ -99,7 +98,7 @@ func should_hammer()
   return cd <= 0 | cd >= 647
 
 func hammer()
-  equip @hammer@
+  equip heavy hammer
   ?item.CanActivate("hammer")
     activate R
 
