@@ -72,7 +72,7 @@ func should_slap()
     return false
   ?foe = pallas // FIXME
     return false
-  ?buffs.string ! "pick_pocket:1"
+  ?buffs.string ! "pick_pocket:2"
     return true
   ?item.GetCooldown("skeleton_arm") > 0
     return false
@@ -80,7 +80,8 @@ func should_slap()
 
 func slap()
   equip @arm@
-  ?item.CanActivate("skeleton_arm")
+  ?item.CanActivate("skeleton_arm") &
+  ^(foe.hp + foe.armor) < 32
     activate R
 
 func should_hammer()
@@ -234,9 +235,8 @@ func default(mode)
 
 ?loc = rocky
   healwalk()
-  // don't bother debuffing the second phase
   ?foe = dysangelos_elementalist
-    fight("dps")
+    fight("dps") // don't bother debuffing phase 2
   :?foe = dysangelos_perfected
     fight_boss("dps")
   :
