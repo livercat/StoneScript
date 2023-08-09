@@ -17,6 +17,9 @@ var bardiche = "bardiche *7"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
 
+var pickpocket = "pick_pocket:2"
+var chill = "❄:debuff_chill:3:"
+
 var melee_dps = vigor_1h
 var melee_offhand = fire_1h
 var melee_aoe = blade
@@ -73,7 +76,7 @@ func should_slap()
     return false
   ?foe = pallas // FIXME
     return false
-  ?buffs.string ! "pick_pocket:2"
+  ?buffs.string ! pickpocket
     return true
   ?item.GetCooldown("skeleton_arm") > 0
     return false
@@ -81,7 +84,8 @@ func should_slap()
 
 func slap()
   equip @arm@
-  ?item.CanActivate("skeleton_arm")
+  ?item.CanActivate("skeleton_arm") &
+  ^buffs.string = pickpocket
     activate R
 
 func should_hammer()
@@ -217,7 +221,7 @@ func fight_boss(mode)
   ^foe ! immune_to_debuff_dot
     equip_main_hand(fire_1h)
     equip_offhand(mode)
-  :?foe.debuffs.string ! "❄:debuff_chill:3:" &
+  :?foe.debuffs.string ! chill &
   ^foe ! immune_to_debuff_chill
     equip_main_hand(ice_1h)
     equip_offhand(mode)
