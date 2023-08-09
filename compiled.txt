@@ -1,21 +1,24 @@
 var armor_shield = "stone shield *8"
 var regen_shield = "stone shield *8"
-var dashing = "dashing shield *6"
+var dashing = "dashing shield *7"
 
-var fire_1h = "fire sword dF *7"
-var poison_1h = "posion sword *6 dP"
+var fire_1h = "fire sword *7 dF"
+var poison_1h = "posion sword *7 dP"
 var ice_1h = "ice sword *5 dI"
-var aether_1h = "aether sword *4 D"
-var vigor_1h = "vigor sword *6"
+var aether_1h = "aether sword *5 D"
+var vigor_1h = "vigor sword *7 dL"
 
-var melee_dps = "vigor sword *6"
-var melee_offhand = "fire sword dF *6"
+var melee_dps = "vigor sword *7 dL"
+var melee_offhand = "fire sword *7 dF"
 var melee_aoe = "blade of the fallen god"
 
-var elemental = "vigor staff *5"
+var elemental = "vigor staff *7"
 var ranged_1h = ""
 var ranged_2h = "repeating crossbow *7"
 var arm = "skeleton arm"
+
+
+var _main_hand = ""
 
 func healwalk()
   ?foe & hp < 10
@@ -27,8 +30,7 @@ func healwalk()
     equip_shield()
   :?target = waypoint | foe.distance > 22
     var cd = item.GetCooldown("quarterstaff")
-    ?(cd <= 0 | cd > 150) &
-    ^item.CanActivate() &
+    ?cd <= 0 & item.CanActivate() &
     ^ai.enabled
       equip quarterstaff
       ?item.CanActivate("quarterstaff")
@@ -45,7 +47,10 @@ func equip_offhand(mode)
   ^item.GetCooldown("dash") <= 0
     equipR @dashing@
   :?mode = "dps"
-    equipR @melee_offhand@
+    ?_main_hand = melee_dps
+      equipR @melee_offhand@
+    :
+      equipR @melee_dps@
   :?mode = "def"
     equip_shield()
 
@@ -64,7 +69,7 @@ func should_slap()
     return true
   ?item.GetCooldown("skeleton_arm") > 0
     return false
-  return foe.hp <= 32
+  return foe.hp <= 20
 
 func slap()
   equip @arm@
@@ -98,33 +103,39 @@ func smite()
   ?item.CanActivate("blade")
     activate R
 
+func equip_main_hand(weapon)
+  _main_hand = weapon
+  equipL @weapon@
+
 func melee(mode)
+  _main_hand = ""
   ?mode = "aoe"
     equip @melee_aoe@
     return
   ?hp < 20
-    equipL @vigor_1h@
+    equip_main_hand(vigor_1h)
   :?foe = aether
-    equipL @vigor_1h@
+    equip_main_hand(vigor_1h)
   :?foe = fire
-    equipL @aether_1h@
+    equip_main_hand(aether_1h)
   :?foe = ice
-    equipL @fire_1h@
+    equip_main_hand(fire_1h)
   :?foe = poison
-    equipL @ice_1h@
+    equip_main_hand(ice_1h)
   :?foe = vigor
-    equipL @poison_1h@
+    equip_main_hand(poison_1h)
   :
-    equipL @melee_dps@
+    equip_main_hand(melee_dps)
   equip_offhand(mode)
 
 func ranged(mode)
+  _main_hand = ""
   ?(mode = "dps" | mode = "aoe" & ranged_2h ! "") |
   ^ ranged_1h = ""
     equip @ranged_2h@
     return
   ?(mode = "def" & ranged_1h ! "") | ranged_2h = ""
-    equipL @ranged_1h@
+    equip_main_hand(ranged_1h)
     return equip_offhand(mode)
   return melee(mode)
 
@@ -135,12 +146,14 @@ func fight(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
     // medium range, but not marked as ranged
-    ?foe = mine_walker
+    ?foe = mine_walker | foe = ice_wall
       melee(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
       melee(mode)
     :?foe.count < 3
+      melee(mode)
+    :?foe = spawner
       melee(mode)
     :? foe ! immune_to_physical
       ranged(mode)
@@ -169,15 +182,15 @@ func fight_boss(mode)
     fight(mode)
   :?foe.debuffs.string ! "∞:debuff_damage:1:" &
   ^ foe ! immune_to_debuff_damage
-    equipL @poison_1h@
+    equip_main_hand(poison_1h)
     equip_offhand(mode)
   :?foe.debuffs.string ! "φ:debuff_dot:1:" &
   ^foe ! immune_to_debuff_dot
-    equipL @fire_1h@
+    equip_main_hand(fire_1h)
     equip_offhand(mode)
   :?foe.debuffs.string ! "❄:debuff_chill:3:" &
-  ^foe ! immune_to_debuff_chill & foe ! mnir
-    equipL @ice_1h@
+  ^foe ! immune_to_debuff_chill
+    equip_main_hand(ice_1h)
     equip_offhand(mode)
   :
     fight(mode)
