@@ -26,22 +26,9 @@ var melee_aoe = blade
 
 // internal use
 var _main_hand = ""
+var _stage = 0
 var x = 0
 var y = 0
-
-
-func dodge_nagajara()
-  // dodge the poison
-  ?get_char_above() = "("
-    equipL mind stone
-    equip_shield()
-    return true
-  return false
-
-func get_char_above()
-  x = screen.FromWorldX(pos.x)
-  y = screen.FromWorldZ(pos.z)
-  return draw.GetSymbol(x, y - 4)
 
 func healwalk()
   ?foe & hp < 10
@@ -200,7 +187,9 @@ func fight(mode)
     // medium range, but not marked as ranged
     ?foe = mine_walker |
     // made by hrminir
-    ^foe = ice_wall
+    ^foe = ice_wall |
+    // poisons you when attacked by ranged
+    ^foe = cult_guard
       melee(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
@@ -322,9 +311,35 @@ func default(mode)
   : // blown away
     melee("def")
 
+func fight_nagajara()
+  // goal is to dodge poison balls
+  ?get_char_above() = "("
+    stage++
+
+  // start at the xbow range
+  ?_stage = 0
+    ranged("dps")
+  :?_stage = 1
+    equip quarterstaff
+    activate R
+  :?_stage = 2
+    equipL @vigor_1h@
+    equipR @dashing@
+    _stage++
+  :?_stage = 3
+    fight_boss("dps")
+  :?_stage = 4
+    equipL mind stone
+    equip_shield()
+    _stage = 0
+
+func get_char_above()
+  x = screen.FromWorldX(pos.x)
+  y = screen.FromWorldZ(pos.z)
+  return draw.GetSymbol(x, y - 4)
+
 ?loc = temple | loc = nagaraja
-  healwalk()
   ?foe ! boss
     default("def")
-  :? ! dodge_nagajara()
-    default("dps")
+  :
+    fight_nagajara()
