@@ -33,8 +33,10 @@ var y = 0
 var cache = []
 var hud_y = 6
 var i
-var _buffs = ["smite", "pick_pocket", "vampiric"]
-var _debuffs = ["debuff_duration_damage"]
+var _buffs = ["smite", "pick_pocket", "vampiric", "debuff_damage", "lucky_crit_multi"]
+var _buffns = ["Smite", "Pickpocket", "Vampiric", "DmgDown", "Lucky"]
+var _debuffs = ["debuff_duration_damage", "debuff_yeti_chill", "debuff_move_speed"]
+var _debuffn = ["Poison", "Chill", "Slow"]
 var _statuses = []
 // cooldowns
 var mindCD
@@ -56,25 +58,25 @@ bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
 
 
-func format_status(s, list)
+func format_status(s, list, listn)
   _statuses.Clear()
   var a = string.Split(s, ":", ",")
   ?a.Count() > 0
     for status_name : list
       i = a.IndexOf(status_name)
       ?i >= 0
-        _statuses.Add(string.Format("{0}(1)", a[i], a[i+1]))
+        _statuses.Add(string.Format("{0}{1}", listn[list.indexOf(status_name)], a[i+1]))
     return string.Join(", ", _statuses)
   return ""
 
 func draw_hud(show_foe)
   ?buffs.count > 0
-    >`0,22,@format_status(buffs.string, _buffs)@
+    >`0,22,@format_status(buffs.string, _buffs, _buffn)@
     >`0,23,@buffs.string@
   :
     >`0,22,No buffs
   ?debuffs.count > 0
-    >`0,24,@format_status(debuffs.string, _debuffs)@
+    >`0,24,@format_status(debuffs.string, _debuffs, _debuffn)@
     >`0,25,@debuffs.string@
   :
     >`0,24,No debuffs
