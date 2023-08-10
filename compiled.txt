@@ -17,7 +17,7 @@ var bardiche = "bardiche *8"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
 
-var arm_damage = 32
+var arm_damage = 20
 var pickpocket = "pick_pocket:2"
 var chill = "❄:debuff_chill:6:"
 
@@ -28,11 +28,8 @@ var melee_aoe = bardiche
 // internal use
 var _main_hand = ""
 var _naga = 0
-var x = 0
-var y = 0
-var cache = []
-var hud_y = 6
-var i
+var _cache = []
+var _hy = 6
 var _buffs = [["smite", "Smite"], 
 ^["pick_pocket", "Pickpocket"],
 ^["vampiric", "Vampiric"],
@@ -63,61 +60,59 @@ bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
 
 
-func format_status(s, list)
+func fmt(s, list)
   _st.Clear()
   var splt = string.Split(s, ":", ",")
   ?splt.Count() > 0
     for i = 0 .. list.Count() - 1
       var idx = splt.IndexOf(list[i][0])
       ?idx > -1
-        _st.Add(string.Format("{0}{1}",
+        _st.Add(string.Format("{0}({1})",
         ^list[i][1], splt[idx+1]))
     return string.Join(", ", _st)
   return ""
 
 func draw_hud(show_foe)
   ?buffs.count > 0
-    var b_str = format_status(buffs.string,
-    ^_buffs, _buffn)
+    var b_str = fmt(buffs.string, _buffs)
     ?b_str
       >`0,22,@b_str@
       >`0,23,@buffs.string@
   :
     >`0,22,No buffs
   ?debuffs.count > 0
-    var d_str = format_status(debuffs.string,
-    ^_debuffs, _debuffn)
+    var d_str = fmt(debuffs.string, _debuffs)
     ?d_str
       >`0,24,@d_str@
       >`0,25,@debuffs.string@
   :
     >`0,24,No debuffs
   // cooldowns
-  >`0,@hud_y+0@,#@colorize_cd(mindCD, false)@,Mind 
+  >`0,@_hy+0@,#@colorize(mindCD, false)@,Mind 
   ^@time.FormatDigital(mindCD)@
-  >`0,@hud_y+1@,#@colorize_cd(hammerCD, 
+  >`0,@_hy+1@,#@colorize(hammerCD, 
   ^should_hammer())@,Hammer 
   ^@time.FormatDigital(hammerCD)@
-  >`0,@hud_y+2@,#@colorize_cd(bardCD, 
+  >`0,@_hy+2@,#@colorize(bardCD, 
   ^should_bardiche())@,Bard 
   ^@time.FormatDigital(bardCD)@
-  >`0,@hud_y+3@,#@colorize_cd(bladeCD, 
+  >`0,@_hy+3@,#@colorize(bladeCD, 
   ^should_smite())@,Blade 
   ^@time.FormatDigital(bladeCD)@
-  >`0,@hud_y+4@,#@colorize_cd(armCD, 
+  >`0,@_hy+4@,#@colorize(armCD, 
   ^should_slap())@,Arm 
   ^@time.FormatDigital(armCD)@
   ?show_foe
     >`0,25,@foe@
     ?foe
-      >`0,@hud_y+5@,@foe.name@
-      >`0,@hud_y+6@,Foe DMG: @foe.damage@
-      >`0,@hud_y+7@,Foe State: @foe.state@
-      >`0,@hud_y+8@,Foe Distance: @foe.distance@
+      >`0,@_hy+5@,@foe.name@
+      >`0,@_hy+6@,Foe DMG: @foe.damage@
+      >`0,@_hy+7@,Foe State: @foe.state@
+      >`0,@_hy+8@,Foe Distance: @foe.distance@
     :
-      >`0,@hud_y+5@,No Enemy
+      >`0,@_hy+5@,No Enemy
 
-func colorize_cd(cd, cond)
+func colorize(cd, cond)
   ?cd <= 0
     ?cond
       return "blue"
@@ -129,7 +124,8 @@ func can_activate()
 
 func healwalk()
   ?foe.distance < 25 & hp < (maxhp / 4) &
-  ^(item.potion = "healing" | item.potion = "vampiric")
+  ^(item.potion = "healing" | 
+  ^item.potion = "vampiric")
     activate potion
   ?foe & foe.distance < 23
     return
@@ -226,7 +222,7 @@ func should_hammer()
   ^foe.distance > 7 |
   ^foe ! boss |
   ^(foe=dysangelos_perfected & foe.state<107)
-  // delay hammering until shield animation ends
+    // delay hammering until shield animation ends
     return false
   return hammerOK()
 
@@ -243,7 +239,7 @@ func bardicheOK()
 func should_bardiche()
   ?!can_activate() |
   ^foe.distance > 9 |
-  ^foe ! boss
+  ^(foe ! boss & foe.count < 5)
     return false
   return bardicheOK()
 
@@ -269,7 +265,7 @@ func should_melee()
   // swarms
   ^(foe = spawner & loc ! caves)
 
-
+// modes: "dps", "def"
 func melee(mode)
   _main_hand = ""
   ?hp < (maxhp / 2)
@@ -288,6 +284,7 @@ func melee(mode)
     equip_main_hand(melee_dps)
   equip_offhand(mode)
 
+// modes: "dps", "def"
 func ranged(mode)
   _main_hand = ""
   ?foe = immune_to_physical
@@ -302,7 +299,7 @@ func ranged(mode)
 
 func should_aoe()
   return foe.count >= 4 | 
-  ^(foe = spawner & loc ! caves)
+  ^(foe = spawner & foe.count > 1 & loc ! caves)
 
 func aoe()
   equip @melee_aoe@
@@ -314,6 +311,8 @@ func aoe()
 func fight(mode)
   ?foe.distance > 22
     healwalk()
+  :?should_smite()
+    smite()
   // xbow range
   :?foe.distance <= 22 & foe.distance > 7
     ?should_melee()
@@ -323,8 +322,6 @@ func fight(mode)
   // melee range
   :?foe = immune_to_physical
     equip @elemental@
-  :?should_smite()
-    smite()
   :?should_slap()
     slap()
   :?should_hammer()
@@ -390,10 +387,7 @@ brew_pot()
 ?loc.loop
   _main_hand = ""
   _naga = 0
-  x = 0
-  y = 0
-  cache.Clear()
-  _st.Clear()
+  _cache.Clear()
 
 ?loc = rocky
   healwalk()
@@ -468,7 +462,7 @@ brew_pot()
   :?foe.state = 133
     ranged("dps")
   :?foe.distance <= 2
-    fight_boss("dps")
+    melee("dps")
   :?foe.distance <= 5
     // The shovel has an attack range of 1
     // so it forces the player to move very
@@ -483,11 +477,11 @@ func detect_poison(pos_x, pos_y)
   for px = pos_x .. pos_x+10
     for py = pos_y-6 .. pos_y
       ?draw.GetSymbol(px, py) = "("
-        cache.Add([pos_x, pos_y, px, py])
-  var count = cache.Count()
+        _cache.Add([pos_x, pos_y, px, py])
+  var count = _cache.Count()
   ?count > 0
     for line = 1 .. count
-      var v = cache[line-1]
+      var v = _cache[line-1]
       >`0,@line@,x=@v[0]@, y=@v[1]@, 
       ^px=@v[2]@, py=@v[3]@;
 
@@ -501,8 +495,8 @@ func is_poison_near(pos_x, pos_y)
 
 func fight_nagajara()
   // goal is to dodge poison balls
-  x = screen.FromWorldX(pos.x)
-  y = screen.FromWorldZ(pos.z)
+  var x = screen.FromWorldX(pos.x)
+  var y = screen.FromWorldZ(pos.z)
   // detect_poison(x, y)
   ?is_poison_near(x, y)
     _naga++
