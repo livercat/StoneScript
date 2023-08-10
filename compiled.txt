@@ -48,12 +48,11 @@ func healwalk()
     equipL star
     equip_shield()
   :?target = waypoint | foe.distance > 22
-    var cd = item.GetCooldown("quarterstaff")
-    ?(cd <= 0 | cd > 185) & item.CanActivate() &
+    ?item.GetCooldown("quarterstaff") <= 0 &
+    ^item.CanActivate() &
     ^ai.enabled
       equip quarterstaff
-      ?item.CanActivate("quarterstaff")
-        activate R
+      activate R
     :?hp < maxhp
       equipL ouroboros
       equip_shield()
@@ -214,7 +213,7 @@ func fight(mode)
     // finish off remaining
     ^(foe.count < 3 & foe ! mosquito) |
     // spawns too fast
-    ^foe = Toupee Snatcher |
+    ^foe = snatcher |
     ^foe = spawner
       melee(mode)
     :? foe ! immune_to_physical
@@ -376,10 +375,7 @@ func fight_nagajara()
     // ?dasher
     //   equipR @dasher@
     fight_boss("dps")
-    _naga++
-  :?_naga = 4
-    fight_boss("dps")
-  :?_naga >= 5
+  :?_naga >= 4
     ?item.GetCooldown("mind") <= 0
       // dodge back and repeat
       equipL mind stone
