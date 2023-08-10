@@ -23,7 +23,7 @@ var chill = "❄:debuff_chill:3:"
 
 var melee_dps = vigor_1h
 var melee_offhand = fire_1h
-var melee_aoe = blade
+var melee_aoe = bardiche
 
 // internal use
 var _main_hand = ""
@@ -234,44 +234,44 @@ func should_melee()
   ^foe.name = biter | foe.name = peeler) &
   ^foe.count > 1
 
-func should_aoe()
-  return foe.count >= 5 | 
-  ^(foe = spawner & loc ! caves) |
-  ^(foe.name = snatcher |
-  ^foe.name = biter | foe.name = peeler) &
-  ^foe.count > 1
 
 func melee(mode)
   _main_hand = ""
-  ?mode = "aoe"
-    equip @melee_aoe@
+  ?hp < (maxhp / 2)
+    equip_main_hand(vigor_1h)
+  :?foe = aether
+    equip_main_hand(vigor_1h)
+  :?foe = fire
+    equip_main_hand(aether_1h)
+  :?foe = ice
+    equip_main_hand(fire_1h)
+  :?foe = poison
+    equip_main_hand(ice_1h)
+  :?foe = vigor
+    equip_main_hand(poison_1h)
   :
-    ?hp < (maxhp / 2)
-      equip_main_hand(vigor_1h)
-    :?foe = aether
-      equip_main_hand(vigor_1h)
-    :?foe = fire
-      equip_main_hand(aether_1h)
-    :?foe = ice
-      equip_main_hand(fire_1h)
-    :?foe = poison
-      equip_main_hand(ice_1h)
-    :?foe = vigor
-      equip_main_hand(poison_1h)
-    :
-      equip_main_hand(melee_dps)
-    equip_offhand(mode)
+    equip_main_hand(melee_dps)
+  equip_offhand(mode)
 
 func ranged(mode)
   _main_hand = ""
-  ?(mode="dps" | mode="aoe" & ranged_2h ! "") |
-  ^ranged_1h = ""
+  ?(mode="dps" & ranged_2h ! "") | ranged_1h=""
     equip @ranged_2h@
   :?(mode="def" & ranged_1h ! "") | ranged_2h=""
     equip_main_hand(ranged_1h)
     equip_offhand(mode)
   :
     melee(mode)
+
+func should_aoe()
+  return foe.count >= 4 | 
+  ^(foe = spawner & loc ! caves)
+
+func aoe()
+  equip @melee_aoe@
+  ?ai.idle
+    equip wand
+    equip @melee_aoe@
 
 // modes: "dps", "def", "aoe"
 func fight(mode)
@@ -292,8 +292,10 @@ func fight(mode)
     slap()
   :?should_smite()
     smite()
+  :?should_bardiche()
+    bardiche()
   :?should_aoe()
-    melee("aoe")
+    aoe()
   :
     melee(mode)
   
