@@ -19,7 +19,7 @@ var arm = "skeleton arm"
 
 var arm_damage = 32
 var pickpocket = "pick_pocket:2"
-var chill = "❄:debuff_chill:3:"
+var chill = "❄:debuff_chill:6:"
 
 var melee_dps = vigor_1h
 var melee_offhand = fire_1h
@@ -66,12 +66,11 @@ func draw_hud()
   >`0,@hud_y+2@,Foe State: @foe.state@
   >`0,@hud_y+3@,Foe Distance: @foe.distance@
   //cooldowns
-
   >`0,@hud_y+5@,mindCD=@mindCD@
-  >`12,@hud_y+5@,hammerCD=@hammerCD@
-  >`0,@hud_y+6@,bardCD=@bardCD@
-  >`12,@hud_y+6@,bladeCD=@bladeCD@
-  >`0,@hud_y+7@,armCD=@armCD@
+  >`0,@hud_y+6@,hammerCD=@hammerCD@
+  >`0,@hud_y+7@,bardCD=@bardCD@
+  >`0,@hud_y+8@,bladeCD=@bladeCD@
+  >`0,@hud_y+9@,armCD=@armCD@
 
 draw_hud()
 
@@ -251,7 +250,9 @@ func melee(mode)
 
 func ranged(mode)
   _main_hand = ""
-  ?(mode="dps" & ranged_2h ! "") | ranged_1h=""
+  ?foe = immune_to_physical
+    equip @elemental@
+  :?(mode="dps" & ranged_2h ! "") | ranged_1h=""
     equip @ranged_2h@
   :?(mode="def" & ranged_1h ! "") | ranged_2h=""
     equip_main_hand(ranged_1h)
@@ -277,17 +278,17 @@ func fight(mode)
   :?foe.distance <= 22 & foe.distance > 7
     ?should_melee()
       melee(mode)
-    :?foe ! immune_to_physical
-      ranged(mode)
     :
-      melee(mode)
+      ranged(mode)
   // melee range
   :?foe = immune_to_physical
     equip @elemental@
-  :?should_slap()
-    slap()
   :?should_smite()
     smite()
+  :?should_slap()
+    slap()
+  :?should_hammer()
+    hammer()
   :?should_bardiche()
     bardiche()
   :?should_aoe()
@@ -299,17 +300,21 @@ func fight(mode)
 func fight_boss(mode)
   ?foe.distance > 22
     healwalk()
+  :?should_smite()
+    smite()
+  :?should_slap()
+    slap()
   :?should_hammer()
     hammer()
   :?should_bardiche()
     bardiche()
   :?foe.buffs.string = "buff_protection"
     fight(mode)
-  :?foe.debuffs.string ! "∞:debuff_damage:1:" &
+  :?foe.debuffs.string ! "∞:debuff_damage:20:" &
   ^ foe ! immune_to_debuff_damage
     equip_main_hand(poison_1h)
     equip_offhand(mode)
-  :?foe.debuffs.string ! "φ:debuff_dot:1:" &
+  :?foe.debuffs.string ! "φ:debuff_dot:20:" &
   ^foe ! immune_to_debuff_dot
     equip_main_hand(fire_1h)
     equip_offhand(mode)
@@ -389,10 +394,12 @@ func default(mode)
   ?foe ! boss
     default("def")
   :?foe.state = 32 & foe.time = 22
-    mind_dodge() // dodge hammer
-  :?foe.state = 33 // hammer is down
-    default("dps")
-  :?foe.distance <= 22
+    // dodge hammer
+    mind_dodge()
+  :?foe.state = 33
+    // hammer is down
+    fight_boss("dps")
+  :?foe.distance > 15 & foe.state = 2
     ranged("dps")
 
 ?loc = icy_ridge
