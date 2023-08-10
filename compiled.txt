@@ -32,8 +32,10 @@ var x = 0
 var y = 0
 var cache = []
 var hud_y = 6
-var cur_time
-var avg_time
+var i
+var _buffs = ["smite", "pick_pocket", "vampiric"]
+var _debuffs = ["debuff_duration_damage"]
+var _statuses = []
 // cooldowns
 var mindCD
 var staffCD
@@ -53,18 +55,27 @@ hammerCD = item.GetCooldown("hammer")
 bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
 
+
+func format_status(s, list)
+  _statuses.Clear()
+  var a = string.Split(s, ":", ",")
+  ?a.Count() > 0
+    for status_name : list
+      i = a.IndexOf(status_name)
+      ?i >= 0
+        _statuses.Add(string.Format("{0}(1)", a[i], a[i+1]))
+    return string.Join(", ", _statuses)
+  return ""
+
 func draw_hud(show_foe)
-  // stats
-  // cur_time = totaltime / 30
-  // avg_time = loc.averageTime / 30
-  // >`0,22,Time: @cur_time@
-  // >`0,23,Avg: @avg_time@
   ?buffs.count > 0
+    >`0,22,@format_status(buffs.string, _buffs)@
     >`0,23,@buffs.string@
   :
-    >`0,23,No buffs
+    >`0,22,No buffs
   ?debuffs.count > 0
-    >`0,24,@debuffs.string@
+    >`0,24,@format_status(debuffs.string, _debuffs)@
+    >`0,25,@debuffs.string@
   :
     >`0,24,No debuffs
   // cooldowns
@@ -95,8 +106,8 @@ func draw_hud(show_foe)
 func colorize_cd(cd, cond)
   ?cd <= 0
     ?cond
-      return "green"
-    return "blue"
+      return "blue"
+    return "green"
   return "red"
 
 func can_activate()
@@ -325,11 +336,11 @@ func fight_boss(mode)
     bardiche()
   :?foe.buffs.string = "buff_protection"
     fight(mode)
-  :?foe.debuffs.string ! "∞:debuff_damage:20:" &
+  :?foe.debuffs.string ! "∞:debuff_damage:1:" &
   ^ foe ! immune_to_debuff_damage
     equip_main_hand(poison_1h)
     equip_offhand(mode)
-  :?foe.debuffs.string ! "φ:debuff_dot:20:" &
+  :?foe.debuffs.string ! "φ:debuff_dot:1:" &
   ^foe ! immune_to_debuff_dot
     equip_main_hand(fire_1h)
     equip_offhand(mode)
@@ -368,6 +379,7 @@ brew_pot()
   x = 0
   y = 0
   cache.Clear()
+  _statuses.Clear()
 
 ?loc = rocky
   healwalk()
