@@ -207,14 +207,15 @@ func fight(mode)
     // made by hrminir
     ^foe = ice_wall |
     // poisons you when attacked by ranged
-    ^foe = cult_guard
-      melee(mode)
-    :?foe = immune_to_ranged | 
-    ^foe = ranged | foe = boss
-      melee(mode)
-    :?foe.count < 3 & foe ! mosquito
-      melee(mode)
-    :?foe = spawner
+    ^foe = cult_guard |
+    // don't shoot the brick wall
+    ^foe = immune_to_ranged | 
+    ^foe = ranged | foe = boss |
+    // finish off remaining
+    ^(foe.count < 3 & foe ! mosquito) |
+    // spawns too fast
+    ^foe = Toupee Snatcher |
+    ^foe = spawner
       melee(mode)
     :? foe ! immune_to_physical
       ranged(mode)
@@ -369,17 +370,24 @@ func fight_nagajara()
     // and continue to shoot
     ranged("dps")
   :?_naga = 3
-    // dash 2nd poison
-    equipL @vigor_1h@
-    equipR @dashing@
+    // dash 2nd and 3rd poison
+    // equipL @vigor_1h@
+    // var dasher = dash()
+    // ?dasher
+    //   equipR @dasher@
+    fight_boss("dps")
     _naga++
   :?_naga = 4
     fight_boss("dps")
-  :?_naga = 5
-    // dodge back and repeat
-    equipL mind stone
-    equip_shield()
-    _naga = 0
+  :?_naga >= 5
+    ?item.GetCooldown("mind") <= 0
+      // dodge back and repeat
+      equipL mind stone
+      equip_shield()
+      _naga = 0
+    :
+      // mind stone on CD, try to evade
+      fight_boss("def")
 
 ?loc = temple | loc = nagaraja
   ?foe ! boss
