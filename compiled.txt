@@ -32,6 +32,8 @@ var x = 0
 var y = 0
 var cache = []
 var hud_y = 6
+var cur_time
+var avg_time
 // cooldowns
 var mindCD
 var staffCD
@@ -51,35 +53,51 @@ hammerCD = item.GetCooldown("hammer")
 bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
 
-func draw_hud()
+func draw_hud(show_foe)
   // stats
-  >`0,22,Time: @totaltime@
-  >`0,23,Stop: @loc.averageTime@
-  >`0,24,@debuffs.string@
-  // enemy
-  >`0,25,@foe@
-  ?foe
-    >`0,@hud_y+0@,@foe.name@
+  // cur_time = totaltime / 30
+  // avg_time = loc.averageTime / 30
+  // >`0,22,Time: @cur_time@
+  // >`0,23,Avg: @avg_time@
+  ?buffs.count > 0
+    >`0,23,@buffs.string@
   :
-    >`0,@hud_y+0@,No Enemy Detected 
-  >`0,@hud_y+1@,Foe DMG: @foe.damage@
-  >`0,@hud_y+2@,Foe State: @foe.state@
-  >`0,@hud_y+3@,Foe Distance: @foe.distance@
-  //cooldowns
-  >`0,@hud_y+5@,mindCD=@mindCD@
-  >`0,@hud_y+6@,hammerCD=@hammerCD@
-  >`0,@hud_y+7@,bardCD=@bardCD@
-  >`0,@hud_y+8@,bladeCD=@bladeCD@
-  >`0,@hud_y+9@,armCD=@armCD@
+    >`0,23,No buffs
+  ?debuffs.count > 0
+    >`0,24,@debuffs.string@
+  :
+    >`0,24,No debuffs
+  // cooldowns
+  >`0,@hud_y+0@,#@colorize_cd(mindCD, false)@,Mind 
+  ^@time.FormatDigital(mindCD)@
+  >`0,@hud_y+1@,#@colorize_cd(hammerCD, 
+  ^should_hammer())@,Hammer 
+  ^@time.FormatDigital(hammerCD)@
+  >`0,@hud_y+2@,#@colorize_cd(bardCD, 
+  ^should_bardiche())@,Bard 
+  ^@time.FormatDigital(bardCD)@
+  >`0,@hud_y+3@,#@colorize_cd(bladeCD, 
+  ^should_smite())@,Blade 
+  ^@time.FormatDigital(bladeCD)@
+  >`0,@hud_y+4@,#@colorize_cd(armCD, 
+  ^should_slap())@,Arm 
+  ^@time.FormatDigital(armCD)@
+  ?show_foe
+    >`0,25,@foe@
+    ?foe
+      >`0,@hud_y+5@,@foe.name@
+      >`0,@hud_y+6@,Foe DMG: @foe.damage@
+      >`0,@hud_y+7@,Foe State: @foe.state@
+      >`0,@hud_y+8@,Foe Distance: @foe.distance@
+    :
+      >`0,@hud_y+5@,No Enemy
 
-draw_hud()
-
-?loc.loop
-  _main_hand = ""
-  _naga = 0
-  x = 0
-  y = 0
-  cache.Clear()
+func colorize_cd(cd, cond)
+  ?cd <= 0
+    ?cond
+      return "green"
+    return "blue"
+  return "red"
 
 func can_activate()
   return item.CanActivate() & ai.enabled
@@ -139,6 +157,12 @@ func equip_shield()
   :
     equipR @armor_shield@
 
+func aac(weapon)
+  equip @weapon@
+  ?ai.idle
+    equip wand
+  equip @weapon@
+
 func should_slap()
   ?armCD > 0 |
   ^foe = pallas | // immune
@@ -148,12 +172,6 @@ func should_slap()
   ?buffs.string ! pickpocket
     return true
   return foe.armor <= 0 & foe.hp <= arm_damage
-
-func aac(weapon)
-  equip @weapon@
-  ?ai.idle
-    equip wand
-  equip @weapon@
 
 func slap()
   aac(arm)
@@ -182,7 +200,7 @@ func should_hammer()
   ^foe.armor <= 0 |
   ^foe.distance > 7 |
   ^foe ! boss |
-  ^(foe=dysangelos_perfected|foe.state<107)
+  ^(foe=dysangelos_perfected & foe.state<107)
   // delay hammering until shield animation ends
     return false
   return hammerOK()
@@ -190,9 +208,6 @@ func should_hammer()
 func hammer()
   // for some reason can't use 
   // var with hammer name
-  equip heavy hammer
-  ?ai.idle
-    equip wand
   equip heavy hammer
   ?item.CanActivate("hammer")
     activate R
@@ -333,10 +348,26 @@ func default(mode)
   :
     fight_boss(mode)
 
-?loc = caves
-  brew stone + bronze
-:
-  brew tar + bronze
+func brew_pot()
+  ?item.potion = empty
+    ?loc = caves
+      brew stone + bronze
+    :
+      brew tar + bronze
+
+/*
+Actual logic below
+*/
+
+draw_hud(false)
+brew_pot()
+
+?loc.loop
+  _main_hand = ""
+  _naga = 0
+  x = 0
+  y = 0
+  cache.Clear()
 
 ?loc = rocky
   healwalk()
