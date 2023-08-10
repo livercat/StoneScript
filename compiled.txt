@@ -48,11 +48,11 @@ armCD = item.GetCooldown("skeleton_arm")
 hammerCD = item.GetCooldown("hammer")
 bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
->`0,0,mindCD=@mindCD@
->`12,0,hammerCD=@hammerCD@
->`0,1,bardCD=@bardCD@
->`12,1,bladeCD=@bladeCD@
->`0,2,armCD=@armCD@
+>`0,7,mindCD=@mindCD@
+>`12,7,hammerCD=@hammerCD@
+>`0,8,bardCD=@bardCD@
+>`12,8,bladeCD=@bladeCD@
+>`0,9,armCD=@armCD@
 
 ?loc.loop
   _main_hand = ""
@@ -61,8 +61,12 @@ bardCD = item.GetCooldown("bardiche")
   y = 0
   cache.Clear()
 
+func can_activate()
+  return item.CanActivate() & ai.enabled
+
 func healwalk()
-  ?foe & hp < 10
+  ?foe.distance < 25 & hp < 10 &
+  ^"healing vampiric" = item.potion
     activate potion
   ?foe & foe.distance < 23
     return
@@ -71,21 +75,20 @@ func healwalk()
     equip_shield()
   :?target = waypoint | foe.distance > 22
     ?staffCD <= 0 &
-    ^item.CanActivate() &
-    ^ai.enabled
+    ^can_activate()
       equip quarterstaff
       ?item.CanActivate("quarterstaff")
         activate R
-    :?hp < maxhp
-      equipL ouroboros
-      equip_shield()
     :
-      equipL triskelion
       equip_shield()
+      ?hp < maxhp
+        equipL ouroboros
+      :
+        equipL triskelion
 
 func dash()
   ?foe.distance > 6 & 
-  ^ai.enabled &
+  ^can_activate() &
   // don't dash into ray
   ^(foe!dysangelos_perfected|foe.state!115)
     ?bashCD <= 0
@@ -119,7 +122,7 @@ func equip_shield()
 func should_slap()
   ?armCD > 0 |
   ^foe = pallas | // immune
-  ^!ai.enabled | // skills disabled
+  ^!can_activate() |
   ^foe.distance > 6
     return false
   ?buffs.string ! pickpocket
@@ -132,28 +135,10 @@ func slap()
   ^buffs.string = pickpocket
     activate R
 
-func hammerOK()
-  return hammerCD <= 0 | hammerCD >= 647
-
-func should_hammer()
-  ?!ai.enabled | // skills disabled
-  ^foe.armor <= 0 |
-  ^foe.distance > 7 |
-  ^foe ! boss
-  // delay hammering until shield animation ends
-  ^(foe=dysangelos_perfected|foe.state<107)
-    return false
-  return hammerOK()
-
-func hammer()
-  equip heavy hammer
-  ?item.CanActivate("hammer")
-    activate R
-
 func should_smite()
   ?bladeCD > 0 |
   ^foe = pallas | // immune
-  ^!ai.enabled | // skills disabled
+  ^!can_activate() |
   ^foe.distance > 11
     return false
   return (foe.count >= 5 | foe = boss)
@@ -163,11 +148,29 @@ func smite()
   ?item.CanActivate("blade")
     activate R
 
+func hammerOK()
+  return hammerCD <= 0 | hammerCD >= 647
+
+func should_hammer()
+  ?!can_activate() |
+  ^foe.armor <= 0 |
+  ^foe.distance > 7 |
+  ^foe ! boss
+  ^(foe=dysangelos_perfected|foe.state<107)
+  // delay hammering until shield animation ends
+    return false
+  return hammerOK()
+
+func hammer()
+  equip heavy hammer
+  ?item.CanActivate("hammer")
+    activate R
+
 func bardicheOK()
   return bardCD <= 0 | bardCD >= 870
 
 func should_bardiche()
-  ?!ai.enabled |
+  ?!can_activate() |
   ^foe.distance > 9 |
   ^foe ! boss
     return false
@@ -182,82 +185,90 @@ func equip_main_hand(weapon)
   _main_hand = weapon
   equipL @weapon@
 
+func should_melee()
+  // medium range, but not marked as ranged
+  return foe = mine_walker |
+  // made by hrminir
+  ^foe = ice_wall |
+  // poisons you when attacked by ranged
+  ^foe = cult_guard |
+  // don't shoot the brick wall
+  ^foe = immune_to_ranged | 
+  ^foe = ranged | foe = boss |
+  // swarms
+  ^(foe = spawner & loc ! caves) |
+  ^(foe.name = snatcher |
+  ^foe.name = biter | foe.name = peeler) &
+  ^foe.count > 1
+
+func should_aoe()
+  return foe.count >= 5 | 
+  ^(foe = spawner & loc ! caves) |
+  ^(foe.name = snatcher |
+  ^foe.name = biter | foe.name = peeler) &
+  ^foe.count > 1
+
 func melee(mode)
   _main_hand = ""
   ?mode = "aoe"
     equip @melee_aoe@
-    return
-  ?hp < (maxhp / 2)
-    equip_main_hand(vigor_1h)
-  :?foe = aether
-    equip_main_hand(vigor_1h)
-  :?foe = fire
-    equip_main_hand(aether_1h)
-  :?foe = ice
-    equip_main_hand(fire_1h)
-  :?foe = poison
-    equip_main_hand(ice_1h)
-  :?foe = vigor
-    equip_main_hand(poison_1h)
   :
-    equip_main_hand(melee_dps)
-  equip_offhand(mode)
+    ?hp < (maxhp / 2)
+      equip_main_hand(vigor_1h)
+    :?foe = aether
+      equip_main_hand(vigor_1h)
+    :?foe = fire
+      equip_main_hand(aether_1h)
+    :?foe = ice
+      equip_main_hand(fire_1h)
+    :?foe = poison
+      equip_main_hand(ice_1h)
+    :?foe = vigor
+      equip_main_hand(poison_1h)
+    :
+      equip_main_hand(melee_dps)
+    equip_offhand(mode)
 
 func ranged(mode)
   _main_hand = ""
   ?(mode="dps" | mode="aoe" & ranged_2h ! "") |
-  ^ ranged_1h = ""
+  ^ranged_1h = ""
     equip @ranged_2h@
-    return
-  ?(mode="def" & ranged_1h ! "") | ranged_2h=""
+  :?(mode="def" & ranged_1h ! "") | ranged_2h=""
     equip_main_hand(ranged_1h)
-    return equip_offhand(mode)
-  return melee(mode)
+    equip_offhand(mode)
+  :
+    melee(mode)
 
 // modes: "dps", "def", "aoe"
 func fight(mode)
   ?foe.distance > 22
-    return // continue to healwalk
+    healwalk()
   // xbow range
-  ?foe.distance <= 22 & foe.distance > 7
-    // medium range, but not marked as ranged
-    ?foe = mine_walker |
-    // made by hrminir
-    ^foe = ice_wall |
-    // poisons you when attacked by ranged
-    ^foe = cult_guard |
-    // don't shoot the brick wall
-    ^foe = immune_to_ranged | 
-    ^foe = ranged | foe = boss |
-    // finish off remaining
-    ^(foe.count < 3 & foe ! mosquito) |
-    // spawns too fast
-    ^foe = snatcher | foe = biter
-    ^foe = spawner | foe = peeler
+  :?foe.distance <= 22 & foe.distance > 7
+    ?should_melee()
       melee(mode)
     :? foe ! immune_to_physical
       ranged(mode)
     :
       melee(mode)
-  // close range
+  // melee range
   :?foe = immune_to_physical
     equip @elemental@
   :?should_slap()
     slap()
   :?should_smite()
     smite()
+  :?should_aoe()
+    melee("aoe")
   :
-    ?foe.count >= 5 | foe = spawner |
-    ^foe = snatcher | foe = biter | foe = peeler
-      melee("aoe")
-    :
-      melee(mode)
+    melee(mode)
   
 // modes: "dps", "def", "aoe"
 func fight_boss(mode)
   ?foe.distance > 22
-    return // continue to healwalk
-  ?should_hammer()
+    healwalk()
+  :?should_hammer()
     hammer()
   :?should_bardiche()
     bardiche()
@@ -314,18 +325,24 @@ func default(mode)
     default("def")
 
 ?loc = caves
+  brew stone + bronze
   ?foe ! boss
     default("def")
   :
     ?bardicheOK() | bladeCD <= 0
       fight_boss("def")
-    :?foe.distance < 10
+    :?foe.distance < 15
       ?mindCD <= 0
         mind_dodge()
       :
         fight_boss("def")
     :
-      ranged("dps")
+      ?hp > (maxhp / 2)
+        ?item.potion ! empty
+          activate potion
+        ranged("dps")
+      :
+        fight_boss("def")
 
 ?loc = fungus_forest | loc = fungus_forest_boss
   default("def")
@@ -335,22 +352,21 @@ func default(mode)
 
 ?loc = mine | loc = bronze_guardian
   ?foe ! boss
-    return default("def")
-  ?foe.state = 32 & foe.time = 22
+    default("def")
+  :?foe.state = 32 & foe.time = 22
     mind_dodge() // dodge hammer
   :?foe.state = 33 // hammer is down
     default("dps")
   :?foe.distance <= 22
-    equip @ranged_2h@
+    ranged("dps")
 
 ?loc = icy_ridge
   healwalk()
   ?foe ! boss
-    return default("def")
-  
-  ?foe.armor > 0
+    default("def")
+  :?foe.armor > 0
     melee("dps")
-  ?foe.distance <= 2
+  :?foe.distance <= 2
     fight_boss("dps")
   :?foe.distance <= 5
     // The shovel has an attack range of 1
