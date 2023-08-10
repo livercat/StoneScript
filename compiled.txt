@@ -48,6 +48,11 @@ armCD = item.GetCooldown("skeleton_arm")
 hammerCD = item.GetCooldown("hammer")
 bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
+>`0,0,mindCD=@mindCD@
+>`12,0,hammerCD=@hammerCD@
+>`0,1,bardCD=@bardCD@
+>`12,1,bladeCD=@bladeCD@
+>`0,2,armCD=@armCD@
 
 ?loc.loop
   _main_hand = ""
@@ -227,8 +232,8 @@ func fight(mode)
     // finish off remaining
     ^(foe.count < 3 & foe ! mosquito) |
     // spawns too fast
-    ^foe = snatcher |
-    ^foe = spawner
+    ^foe = snatcher | foe = biter
+    ^foe = spawner | foe = peeler
       melee(mode)
     :? foe ! immune_to_physical
       ranged(mode)
@@ -243,7 +248,7 @@ func fight(mode)
     smite()
   :
     ?foe.count >= 5 | foe = spawner |
-    ^foe = snatcher | foe = biter
+    ^foe = snatcher | foe = biter | foe = peeler
       melee("aoe")
     :
       melee(mode)
@@ -312,7 +317,7 @@ func default(mode)
   ?foe ! boss
     default("def")
   :
-    ?bardicheOK() | hammerOK() | bladeCD <= 0
+    ?bardicheOK() | bladeCD <= 0
       fight_boss("def")
     :?foe.distance < 10
       ?mindCD <= 0
