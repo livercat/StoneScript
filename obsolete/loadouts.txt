@@ -1,0 +1,74 @@
+/*
+Copyright © 2019-2022, Matjaž Guštin
+<dev@matjaz.it> <https://matjaz.it>
+Released under the BSD 3-clause license.
+
+Sets of weapons abstracted away as nicely
+named functions.
+*/
+
+func equip_1_weapon(weapon)
+  equip @weapon@
+
+func equip_2_weapons(weaponL, weaponR)
+  equipL @weaponL@
+  equipR @weaponR@
+
+// Place this function at the default case
+// of any switch-case
+func healwalk()
+  // Pick up materials quickly with Star stone
+  ?pickup.distance < 10
+    equip_star()
+  // Heal and gain armor while just walking
+  // towards next objective. If 100% healed,
+  // walk faster.
+  :?target = waypoint | foe.distance > 22
+    ?hp < maxhp
+      equip_ouroboros()
+    :
+      equip_triskelion()
+
+/*
+func equip_ouroboros()
+  equipL ouroboros
+  equipR {shields.armor}
+
+func equip_triskelion()
+  equipL triskelion
+  equipR {shields.armor}
+  
+func equip_star()
+  equipL star
+  equipR {shields.armor}
+
+func equip_1h_melee()
+  equipL {melee.1h}
+  equipR {shields.armor}
+
+func equip_dps_melee()
+  equipL {melee.1h}
+  equipR {melee.1h}
+
+func equip_staff()
+  equip {melee.staff}
+
+func equip_dashing()
+  equipL {melee.1h}
+  equipR {shields.dashing}
+
+func equip_armor_piercing()
+  equipL {melee.hammer}
+  equipR {melee.hammer}
+
+func equip_ranged_healing()
+  equipL {ranged.1h}
+  equipR ouroboros
+  
+func equip_ranged_shield()
+  equipL {ranged.1h}
+  equipR {shields.armor}
+
+func equip_ranged_dps()
+  equip {ranged.2h}
+*/

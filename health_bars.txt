@@ -1,0 +1,69 @@
+// HealthBars (and ArmorBars too!)
+// Created by Lexan 
+
+func Natural(num)
+  ?num < 0
+    return 0
+  return num
+
+func MultiplyString(str, n)
+  n = math.FloorToInt(n)
+  var new_str = ""
+  for i = 0..Natural(n-1)
+    new_str += str
+  return new_str
+
+func GetNumberOfDigits(num)
+  return string.Size("" + num)
+
+var healthBarBG = ""
+var healthBar   = ""
+var armorBarBG  = ""
+var armorBar    = ""
+var healthUnit  = 0.0
+var armorUnit   = 0.0
+var BarY        = -4
+
+?foe
+  healthBarBG = MultiplyString("---",
+^GetNumberOfDigits(Natural(foe.maxhp)))
+  armorBarBG = MultiplyString("---",
+^GetNumberOfDigits(Natural(foe.maxarmor)))
+  
+  healthUnit = foe.maxhp*1.0 /
+^string.Size(healthBarBG)*1.0
+  armorUnit = foe.maxarmor*1.0 /
+^string.Size(armorBarBG)*1.0
+  
+  ?foe.hp > 0
+    healthBar = MultiplyString("*",
+^foe.hp / healthUnit)
+  ?foe.armor > 0
+    armorBar = MultiplyString("*",
+^foe.armor / armorUnit)
+  
+  ?key = ability1
+    >`0,10,#00FF00,Health Unit:    
+^ @healthUnit@
+    >`0,11,#00FF00,Digits:         
+^ @GetNumberOfDigits(Natural(foe.hp))@
+    >`0,12,#00FF00,Health Bar Size:
+^ @string.Size(healthBar)@
+    
+    >`0,14,#0000FF,Armor Unit:    
+^ @armorUnit@
+    >`0,15,#0000FF,Digits:        
+^ @GetNumberOfDigits(Natural(foe.armor))@
+    >`0,16,#0000FF,Armor Bar Size:
+^ @string.Size(armorBar)@
+  
+  ?foe.hp > 0
+    >f0,@BarY+1@,#888888,[@healthBarBG@]@foe.hp@
+    >f0,@BarY+1@,#00FF00,#@healthBar@
+  :
+    >f0,@BarY+1@,#FF0000,[@healthBarBG@]@foe.hp@
+  
+  ?foe.armor > 0
+    >f0,@BarY@,#888888,[@armorBarBG@]
+^@foe.armor@
+    >f0,@BarY@,#0000FF,#@armorBar@

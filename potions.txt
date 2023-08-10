@@ -1,0 +1,55 @@
+var pots = 0
+var mat1 = 0
+var mat2 = 0
+var potname = 0
+?item.potion ! empty & item.potion = auto
+ ?item.potion = "healing"
+  potname = "Healing"
+  pots = res.tar/20
+ :?item.potion = "strength"
+  potname = "Strength"
+  pots = res.stone/20
+ :?item.potion = "experience"
+  potname = "Experience"
+  pots = res.wood/20
+ :?item.potion = "lightning"
+  potname = "Lightning"
+  pots = res.bronze/20
+ :?item.potion = "evasion"
+  potname = "Evasion"
+  mat1 = res.stone/10
+  mat2 = res.wood/10
+ :?item.potion = "defensive"
+  potname = "Defensive"
+  mat1 = res.stone/10
+  mat2 = res.tar/10
+ :?item.potion = "lucky"
+  potname = "Lucky"
+  mat1 = res.stone/10
+  mat2 = res.bronze/10
+ :?item.potion = "cleansing"
+  potname = "Cleansing"
+  mat1 = res.wood/10
+  mat2 = res.tar/10
+ :?item.potion = "berserk"
+  potname = "Berserk"
+  mat1 = res.wood/10
+  mat2 = res.bronze/10
+ :?item.potion = "vampiric"
+  potname = "Vampiric"
+  mat1 = res.tar/10
+  mat2 = res.bronze/10
+ :
+  pots = -1 
+  potname = what
+ ?item.potion = "vampiric" | item.potion = "berserk" | item.potion = "cleansing" | item.potion = "lucky" | item.potion = "defensive" | item.potion = "evasion"
+  ?mat1 > mat2
+   pots = mat2
+  :?mat1 < mat2
+   pots = mat1
+  :
+   pots = mat1
+:
+ pots = 0
+
+>`0,6,Remaining Pots(@potname@):@pots@
