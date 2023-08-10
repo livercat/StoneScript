@@ -94,6 +94,10 @@ func should_hammer()
     return false
   ?foe.distance > 7
     return false
+  // delay hammering until shield animation ends
+  ?foe = dysangelos_perfected &
+  ^foe.state < 107
+    return false
   var cd = item.GetCooldown("hammer")
   return cd <= 0 | cd >= 647
 
@@ -180,7 +184,7 @@ func fight(mode)
     // made by hrminir
     ^foe = ice_wall |
     // they swarm too much
-    ^foe = ant
+    ^(foe = ant & foe = ant_hill)
       melee(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
