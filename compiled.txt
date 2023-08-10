@@ -1,6 +1,7 @@
 var armor_shield = "stone shield *8"
 var regen_shield = armor_shield
 var dashing = "dashing shield *7"
+var bashing = "bashing shield"
 
 var fire_1h = "fire sword *7 dF"
 var poison_1h = "posion sword *7 dP"
@@ -26,9 +27,17 @@ var melee_aoe = blade
 
 // internal use
 var _main_hand = ""
-var _stage = 0
+var _naga = 0
 var x = 0
 var y = 0
+var cache = []
+
+?loc.loop
+  _main_hand = ""
+  _naga = 0
+  x = 0
+  y = 0
+  cache.Clear()
 
 func healwalk()
   ?foe & hp < 10
@@ -52,13 +61,22 @@ func healwalk()
       equipL triskelion
       equip_shield()
 
-func equip_offhand(mode)
+func dash()
   ?foe.distance > 6 & 
-  ^item.GetCooldown("dash") <= 0 &
   ^ai.enabled &
   // don't dash into ray
   ^(foe ! dysangelos_perfected | foe.state ! 115)
-    equipR @dashing@
+    ?item.GetCooldown("bash") <= 0
+      return bashing
+    :?item.GetCooldown("dash") <= 0
+      return dashing
+  return false
+  
+
+func equip_offhand(mode)
+  var dasher = dash()
+  ?dasher ! false
+    equipR @dasher@
   :?mode = "dps"
     ?_main_hand = melee_dps
       equipR @melee_offhand@
@@ -311,32 +329,57 @@ func default(mode)
   : // blown away
     melee("def")
 
+func detect_poison(pos_x, pos_y)
+  >`0,0,x=@x@, y=@y@
+  for px = pos_x .. pos_x+10
+    for py = pos_y-6 .. pos_y
+      ?draw.GetSymbol(px, py) = "("
+        cache.Add([pos_x, pos_y, px, py])
+  var count = cache.Count()
+  ?count > 0
+    for line = 1 .. count
+      var v = cache[line-1]
+      >`0,@line@,x=@v[0]@, y=@v[1]@, px=@v[2]@, py=@v[3]@;
+
+func is_poison_near(pos_x, pos_y)
+  // long and mid range
+  ?draw.GetSymbol(pos_x+2, pos_y-6) = "(" |
+  // melee
+  ^(draw.GetSymbol(pos_x+1, pos_y-6) = "(")
+    return true
+  return false
+
 func fight_nagajara()
   // goal is to dodge poison balls
-  ?get_char_above() = "("
-    stage++
-
-  // start at the xbow range
-  ?_stage = 0
-    ranged("dps")
-  :?_stage = 1
-    equip quarterstaff
-    activate R
-  :?_stage = 2
-    equipL @vigor_1h@
-    equipR @dashing@
-    _stage++
-  :?_stage = 3
-    fight_boss("dps")
-  :?_stage = 4
-    equipL mind stone
-    equip_shield()
-    _stage = 0
-
-func get_char_above()
   x = screen.FromWorldX(pos.x)
   y = screen.FromWorldZ(pos.z)
-  return draw.GetSymbol(x, y - 4)
+  // detect_poison(x, y)
+  ?is_poison_near(x, y)
+    _naga++
+
+  ?_naga = 0
+    // start at the xbow range
+    ranged("dps")
+  :?_naga = 1
+    // staff 1st poison
+    equip quarterstaff
+    activate R
+    _naga++
+  :?_naga = 2
+    // and continue to shoot
+    ranged("dps")
+  :?_naga = 3
+    // dash 2nd poison
+    equipL @vigor_1h@
+    equipR @dashing@
+    _naga++
+  :?_naga = 4
+    fight_boss("dps")
+  :?_naga = 5
+    // dodge back and repeat
+    equipL mind stone
+    equip_shield()
+    _naga = 0
 
 ?loc = temple | loc = nagaraja
   ?foe ! boss
