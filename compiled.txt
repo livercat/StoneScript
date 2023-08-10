@@ -228,7 +228,8 @@ func fight(mode)
   :?should_smite()
     smite()
   :
-    ?foe.count >= 5 | foe = spawner
+    ?foe.count >= 5 | foe = spawner |
+    ^foe = snatcher | foe = biter
       melee("aoe")
     :
       melee(mode)
