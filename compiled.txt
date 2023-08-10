@@ -16,6 +16,7 @@ var bardiche = "bardiche *7"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
 
+var arm_damage = 32
 var pickpocket = "pick_pocket:2"
 var chill = "❄:debuff_chill:3:"
 
@@ -23,7 +24,24 @@ var melee_dps = vigor_1h
 var melee_offhand = fire_1h
 var melee_aoe = blade
 
+// internal use
 var _main_hand = ""
+var x = 0
+var y = 0
+
+
+func dodge_nagajara()
+  // dodge the poison
+  ?get_char_above() = "("
+    equipL mind stone
+    equip_shield()
+    return true
+  return false
+
+func get_char_above()
+  x = screen.FromWorldX(pos.x)
+  y = screen.FromWorldZ(pos.z)
+  return draw.GetSymbol(x, y - 4)
 
 func healwalk()
   ?foe & hp < 10
@@ -69,17 +87,17 @@ func equip_shield()
     equipR @armor_shield@
 
 func should_slap()
-  ?!ai.enabled
+  ?foe = pallas // immune
+    return false
+  ?!ai.enabled // skills disabled
     return false
   ?foe.distance > 6
-    return false
-  ?foe = pallas // FIXME
     return false
   ?buffs.string ! pickpocket
     return true
   ?item.GetCooldown("skeleton_arm") > 0
     return false
-  return (foe.hp + foe.armor) < 32
+  return foe.armor <= 0 & foe.hp <= arm_damage
 
 func slap()
   equip @arm@
@@ -88,7 +106,7 @@ func slap()
     activate R
 
 func should_hammer()
-  ?!ai.enabled
+  ?!ai.enabled // skills disabled
     return false
   ?foe.armor <= 0
     return false
@@ -107,11 +125,11 @@ func hammer()
     activate R
 
 func should_smite()
-  ?!ai.enabled
+  ?foe = pallas // immune
+    return false
+  ?!ai.enabled // skills disabled
     return false
   ?foe.distance > 11
-    return false
-  ?foe = pallas // FIXME
     return false
   ?item.GetCooldown("blade") > 0
     return false
@@ -182,9 +200,7 @@ func fight(mode)
     // medium range, but not marked as ranged
     ?foe = mine_walker |
     // made by hrminir
-    ^foe = ice_wall |
-    // they swarm too much
-    ^(foe = ant & foe = ant_hill)
+    ^foe = ice_wall
       melee(mode)
     :?foe = immune_to_ranged | 
     ^foe = ranged | foe = boss
@@ -242,7 +258,6 @@ func default(mode)
     fight(mode)
   :
     fight_boss(mode)
-
 
 ?loc = rocky
   healwalk()
@@ -311,5 +326,5 @@ func default(mode)
   healwalk()
   ?foe ! boss
     default("def")
-  :
+  :? ! dodge_nagajara()
     default("dps")
