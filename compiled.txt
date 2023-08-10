@@ -31,6 +31,23 @@ var _naga = 0
 var x = 0
 var y = 0
 var cache = []
+var mindCD
+var staffCD
+var bashCD
+var dashCD
+var armCD
+var hammerCD
+var bladeCD
+var bardCD
+var dasher
+mindCD = item.GetCooldown("mind")
+staffCD = item.GetCooldown("quarterstaff")
+bashCD = item.GetCooldown("bash")
+dashCD = item.GetCooldown("dash")
+armCD = item.GetCooldown("skeleton_arm")
+hammerCD = item.GetCooldown("hammer")
+bladeCD = item.GetCooldown("blade")
+bardCD = item.GetCooldown("bardiche")
 
 ?loc.loop
   _main_hand = ""
@@ -48,11 +65,12 @@ func healwalk()
     equipL star
     equip_shield()
   :?target = waypoint | foe.distance > 22
-    ?item.GetCooldown("quarterstaff") <= 0 &
+    ?staffCD <= 0 &
     ^item.CanActivate() &
     ^ai.enabled
       equip quarterstaff
-      activate R
+      ?item.CanActivate("quarterstaff")
+        activate R
     :?hp < maxhp
       equipL ouroboros
       equip_shield()
@@ -64,16 +82,19 @@ func dash()
   ?foe.distance > 6 & 
   ^ai.enabled &
   // don't dash into ray
-  ^(foe ! dysangelos_perfected | foe.state ! 115)
-    ?item.GetCooldown("bash") <= 0
+  ^(foe!dysangelos_perfected|foe.state!115)
+    ?bashCD <= 0
       return bashing
-    :?item.GetCooldown("dash") <= 0
+    :?dashCD <= 0
       return dashing
   return false
-  
+
+func mind_dodge()
+  equipL mind
+  equip_shield()
 
 func equip_offhand(mode)
-  var dasher = dash()
+  dasher = dash()
   ?dasher ! false
     equipR @dasher@
   :?mode = "dps"
@@ -91,16 +112,13 @@ func equip_shield()
     equipR @armor_shield@
 
 func should_slap()
-  ?foe = pallas // immune
-    return false
-  ?!ai.enabled // skills disabled
-    return false
-  ?foe.distance > 6
+  ?armCD > 0 |
+  ^foe = pallas | // immune
+  ^!ai.enabled | // skills disabled
+  ^foe.distance > 6
     return false
   ?buffs.string ! pickpocket
     return true
-  ?item.GetCooldown("skeleton_arm") > 0
-    return false
   return foe.armor <= 0 & foe.hp <= arm_damage
 
 func slap()
@@ -109,19 +127,18 @@ func slap()
   ^buffs.string = pickpocket
     activate R
 
+func hammerOK()
+  return hammerCD <= 0 | hammerCD >= 647
+
 func should_hammer()
-  ?!ai.enabled // skills disabled
-    return false
-  ?foe.armor <= 0
-    return false
-  ?foe.distance > 7
-    return false
+  ?!ai.enabled | // skills disabled
+  ^foe.armor <= 0 |
+  ^foe.distance > 7 |
+  ^foe ! boss
   // delay hammering until shield animation ends
-  ?foe = dysangelos_perfected &
-  ^foe.state < 107
+  ^(foe=dysangelos_perfected|foe.state<107)
     return false
-  var cd = item.GetCooldown("hammer")
-  return cd <= 0 | cd >= 647
+  return hammerOK()
 
 func hammer()
   equip heavy hammer
@@ -129,13 +146,10 @@ func hammer()
     activate R
 
 func should_smite()
-  ?foe = pallas // immune
-    return false
-  ?!ai.enabled // skills disabled
-    return false
-  ?foe.distance > 11
-    return false
-  ?item.GetCooldown("blade") > 0
+  ?bladeCD > 0 |
+  ^foe = pallas | // immune
+  ^!ai.enabled | // skills disabled
+  ^foe.distance > 11
     return false
   return (foe.count >= 5 | foe = boss)
 
@@ -144,15 +158,15 @@ func smite()
   ?item.CanActivate("blade")
     activate R
 
+func bardicheOK()
+  return bardCD <= 0 | bardCD >= 870
+
 func should_bardiche()
-  ?!ai.enabled
+  ?!ai.enabled |
+  ^foe.distance > 9 |
+  ^foe ! boss
     return false
-  ?foe.distance > 9
-    return false
-  ?foe ! boss
-    return false
-  var cd = item.GetCooldown("bardiche")
-  return cd <= 0 | cd >= 870
+  return bardicheOK()
 
 func bardiche()
   equip @bardiche@
@@ -186,11 +200,11 @@ func melee(mode)
 
 func ranged(mode)
   _main_hand = ""
-  ?(mode = "dps" | mode = "aoe" & ranged_2h ! "") |
+  ?(mode="dps" | mode="aoe" & ranged_2h ! "") |
   ^ ranged_1h = ""
     equip @ranged_2h@
     return
-  ?(mode = "def" & ranged_1h ! "") | ranged_2h = ""
+  ?(mode="def" & ranged_1h ! "") | ranged_2h=""
     equip_main_hand(ranged_1h)
     return equip_offhand(mode)
   return melee(mode)
@@ -270,30 +284,43 @@ func default(mode)
 ?loc = rocky
   healwalk()
   ?foe = dysangelos_elementalist
-    fight("dps") // don't bother debuffing phase 2
+    // debuffing is risky in phase 2
+    fight("dps")
   :?foe = dysangelos_perfected
     fight_boss("dps")
   :
     fight_boss("def")
   ?foe.state = 115 & foe.time = 60
-    equipL mind stone // dodge the orb ray
+    // dodge the orb ray
+    mind_dodge()
 
 ?loc = deadwood
   ?foe.name=Poena
     // cheese her by staying out of range
     ?foe.buffs.string="poena_mirror"
       ranged("dps")
-    :?item.GetCooldown("mind") <=0 &
-    ^foe.distance < 23 & foe.state = 32 & foe.time > 37
-      equipL mind stone
-      equip_shield()
+    :?mindCD <=0 &
+    ^foe.distance < 23 & foe.state = 32 &
+    ^foe.time > 37
+      mind_dodge()
     :
       ranged("dps")
   :
     default("def")
 
 ?loc = caves
-  default("def")
+  ?foe ! boss
+    default("def")
+  :
+    ?bardicheOK() | hammerOK() | bladeCD <= 0
+      fight_boss("def")
+    :?foe.distance < 10
+      ?mindCD <= 0
+        mind_dodge()
+      :
+        fight_boss("def")
+    :
+      ranged("dps")
 
 ?loc = fungus_forest | loc = fungus_forest_boss
   default("def")
@@ -302,11 +329,10 @@ func default(mode)
   default("def")
 
 ?loc = mine | loc = bronze_guardian
-  healwalk()
   ?foe ! boss
     return default("def")
   ?foe.state = 32 & foe.time = 22
-    equipR mind stone // dodge hammer
+    mind_dodge() // dodge hammer
   :?foe.state = 33 // hammer is down
     default("dps")
   :?foe.distance <= 22
@@ -340,7 +366,8 @@ func detect_poison(pos_x, pos_y)
   ?count > 0
     for line = 1 .. count
       var v = cache[line-1]
-      >`0,@line@,x=@v[0]@, y=@v[1]@, px=@v[2]@, py=@v[3]@;
+      >`0,@line@,x=@v[0]@, y=@v[1]@, 
+      ^px=@v[2]@, py=@v[3]@;
 
 func is_poison_near(pos_x, pos_y)
   // long and mid range
@@ -370,17 +397,12 @@ func fight_nagajara()
     // and continue to shoot
     ranged("dps")
   :?_naga = 3
-    // dash 2nd and 3rd poison
-    // equipL @vigor_1h@
-    // var dasher = dash()
-    // ?dasher
-    //   equipR @dasher@
+    // dash into melee
     fight_boss("dps")
   :?_naga >= 4
-    ?item.GetCooldown("mind") <= 0
+    ?mindCD <= 0
       // dodge back and repeat
-      equipL mind stone
-      equip_shield()
+      mind_dodge()
       _naga = 0
     :
       // mind stone on CD, try to evade
