@@ -591,8 +591,13 @@ func fight_hrimnir()
         ranged("single")
       :
         melee("def")
+  // blowing
+  :?foe.state = 143 | foe.state = 144
+    ranged("single")
   :?foe.count > 1 // deal with adds
-    ?smiteCD <= 0 & can_activate()
+    ?slowed
+      aoe() // don't waste time on movement
+    :?smiteCD <= 0 & can_activate()
       smite()
     :?bardicheOK() & can_activate() &
     ^foe.distance <= 9
@@ -673,5 +678,6 @@ func reset_loop()
 ?loc.loop
   reset_loop()
 
-draw_hud(true)
+// if true, show a lot of enemy info
+draw_hud(false)
 progress()
