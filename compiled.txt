@@ -542,18 +542,18 @@ func progress()
     ?foe.armor > 0
       fight_boss("dps")
     :?loc.stars > 5
-      ?foe.count > 1 | foe = ice_wall |
-      ^foe.state = 32
-        aoe()
+      ?foe.state = 32 | foe.state = 33 // snowballs
+        ?foe.count > 1 | foe = ice_wall
+          aoe()
+        :
+          ranged("single")
       :?foe.state < 3 // transition
-        ranged("single")
+        ranged("aoe")
       :?foe.state = 142
         // summoning ice wall
         mind_dodge()
-      :?foe.state = 133
-        ranged("single")
       :
-        fight_boss("def")
+        ranged("single")
     : // low zone level
       ?foe.distance <= 2
         // don't bother debuffing
