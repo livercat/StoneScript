@@ -166,13 +166,13 @@ func draw_hud(show_foe)
   ^@time.FormatDigital(armCD)@
 
   ?show_foe
-    >`1,25,~@foe@
+    >`1,25,#DCDCDC,~@foe@
     ?foe
-      >`1,@16@,Count: @foe.count@
-      >`1,@17@,@foe.name@
-      >`1,@18@,Foe DMG: @foe.damage@
-      >`1,@19@,Foe State: @foe.state@
-      >`1,@20@,Foe Distance: @foe.distance@
+      >`1,@16@,#DCDCDC,Count: @foe.count@
+      >`1,@17@,#DCDCDC,@foe.name@
+      >`1,@18@,#DCDCDC,Foe DMG: @foe.damage@
+      >`1,@19@,#DCDCDC,Foe State: @foe.state@
+      >`1,@20@,#DCDCDC,Foe Distance: @foe.distance@
     :
       return
 
