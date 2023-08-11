@@ -74,6 +74,9 @@ var _statuses = [["smite", "Smite", "+"],
 ^["stun", "Stun", "-"]]
 // poor man's hashmap
 var _status_uids = _fill_status_uids()
+
+var poison_debuff = "debuff_duration_damage"
+var dmg_debuff = "debuff_damage"
 var mindCD = 0
 var staffCD = 0
 var bashCD = 0
@@ -84,8 +87,6 @@ var bladeCD = 0
 var bardCD = 0
 var dasher = 0
 var poison_stacks = 0
-var poison_debuff = "debuff_duration_damage"
-var dmg_debuff = "debuff_damage"
 
 // updated each frame
 mindCD = item.GetCooldown("mind")
@@ -148,27 +149,28 @@ func draw_hud(show_foe)
   >`1,6,#@colorize(mindCD, false)@,Mind 
   ^@time.FormatDigital(mindCD)@
   >`1,7,#@colorize(hammerCD, 
-  ^should_hammer)@,Hammer 
+  ^should_hammer())@,Hammer 
   ^@time.FormatDigital(hammerCD)@
   >`1,8,#@colorize(bardCD, 
-  ^should_bard)@,Bard 
+  ^should_bardiche())@,Bard 
   ^@time.FormatDigital(bardCD)@
   >`1,9,#@colorize(bladeCD, 
-  ^should_smite)@,Blade 
+  ^should_smite())@,Blade 
   ^@time.FormatDigital(bladeCD)@
   >`1,10,#@colorize(armCD, 
-  ^should_slap)@,Arm 
+  ^should_slap())@,Arm 
   ^@time.FormatDigital(armCD)@
 
   ?show_foe
     >`1,25,~@foe@
     ?foe
+      >`1,@16@,Count: @foe.count@
       >`1,@17@,@foe.name@
       >`1,@18@,Foe DMG: @foe.damage@
       >`1,@19@,Foe State: @foe.state@
       >`1,@20@,Foe Distance: @foe.distance@
     :
-      >`1,@17@,No Enemy
+      return
 
 func colorize(cd, cond)
   ?cd <= 0
@@ -421,7 +423,7 @@ func use_abilities()
     return smite()
   ?should_slap()
     return slap()
-  ?should_bard()
+  ?should_bardiche()
     return bardiche()
   ?should_hammer()
     return hammer()
@@ -481,7 +483,7 @@ func progress()
     :
       fight_boss("def")
   :?loc = caves
-    ?should_bard()
+    ?should_bardiche()
       bardiche()
     :?should_smite()
       smite()
@@ -491,8 +493,8 @@ func progress()
           mind_dodge()
         :
           fight_boss("def")
-    :
-      ranged()
+      :
+        ranged()
   :?loc = fungus_forest_boss
     fight_boss("def")
   :?loc = undead_crypt_boss
@@ -514,7 +516,7 @@ func progress()
     :?foe.state = 133
       ranged()
     :?loc.stars <= 5
-      :?foe.distance <= 2
+      ?foe.distance <= 2
         // don't bother debuffing
         fight("dps")
       :?foe.distance <= 5
@@ -601,10 +603,6 @@ func reset_loop()
   _naga = 0
   _cache.Clear()
   _stu.Clear()
-  should_bard = false
-  should_slap = false
-  should_smite = false
-  should_hammer = false
 
 ?loc.begin & item.potion = empty
   brew_pot()
