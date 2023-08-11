@@ -1,3 +1,14 @@
+// adjust weapons and runtime settings below
+// to suit your items and progress
+// almost all weapons are optional, but you do
+// need at least these set:
+// ranged_2h, melee_main, default_sh
+// ranged_main is required for Boos (in halls)
+
+// some variable names are shorter
+// than I would prefer for readability,
+// but Mindstone has limit of 50 chars
+
 // your weapons
 var fire_sh = ""
 var poison_sh = "poison shield ap + 4"
@@ -29,11 +40,11 @@ var ranged_off = fire_r
 var melee_main = vigor_1h
 var melee_off = fire_1h
 var default_sh = vigor_sh
+var melee_aoe = ""
 
 // runtime settings
-var arm_damage = 32
+var arm_damage = 32 // depends on *
 var pickpocket = "pick_pocket:2" // depends on *
-var pickpocket_quest_3 = false
 var chill = "❄:debuff_chill:6:" // depends on spd
 
 // internal use
@@ -59,6 +70,7 @@ var _statuses = [["smite", "Smite", "+"],
 ^["debuff_yeti_chill", "AtkSlow", "-"],
 ^["debuff_duration_damage", "DmgDown", "-"],
 ^["debuff_move_speed", "MoveSlow", "-"],
+^["debuff_chill", "Chill", "-"],
 ^["stun", "Stun", "-"]]
 // poor man's hashmap
 var _status_uids = _fill_status_uids()
@@ -71,6 +83,11 @@ var hammerCD = 0
 var bladeCD = 0
 var bardCD = 0
 var dasher = 0
+var poison_stacks = 0
+var poison_debuff = "debuff_duration_damage"
+var dmg_debuff = "debuff_damage"
+
+// updated each frame
 mindCD = item.GetCooldown("mind")
 staffCD = item.GetCooldown("quarterstaff")
 bashCD = item.GetCooldown("bash")
@@ -79,10 +96,6 @@ armCD = item.GetCooldown("skeleton_arm")
 hammerCD = item.GetCooldown("hammer")
 bladeCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
-var should_bard = false
-var should_slap = false
-var should_smite = false
-var should_hammer = false
 
 func _fill_status_uids()
   var uids = []
@@ -93,9 +106,15 @@ func _fill_status_uids()
 func some(s)
   return ! string.Equals(s, "")
 
+func adjust_damage(dmg)
+  ?poison_stacks = 0
+    return dmg
+  return int.Parse(dmg) - poison_stacks
+
 func print_statuses()
   _good.Clear()
   _bad.Clear()
+  poison_stacks = 0
   for s : [buffs.string, debuffs.string]
     // format: *:name:count:duration,...
     var splt = string.Split(s, ":", ",", false)
@@ -103,6 +122,9 @@ func print_statuses()
       // we only need names
       for i = 1 .. splt.Count() - 3
         var st_uid = splt[i]
+        ?string.Equals(st_uid, poison_debuff) |
+        ^string.Equals(st_uid, dmg_debuff)
+          poison_stacks = int.Parse(splt[i+1])
         var idx = _status_uids.IndexOf(st_uid)
         ?idx ! -1
           var info = _statuses[idx]
@@ -141,12 +163,12 @@ func draw_hud(show_foe)
   ?show_foe
     >`1,25,~@foe@
     ?foe
-      >`1,@18@,@foe.name@
-      >`1,@19@,Foe DMG: @foe.damage@
-      >`1,@20@,Foe State: @foe.state@
-      >`1,@21@,Foe Distance: @foe.distance@
+      >`1,@17@,@foe.name@
+      >`1,@18@,Foe DMG: @foe.damage@
+      >`1,@19@,Foe State: @foe.state@
+      >`1,@20@,Foe Distance: @foe.distance@
     :
-      >`1,@18@,No Enemy
+      >`1,@17@,No Enemy
 
 func colorize(cd, cond)
   ?cd <= 0
@@ -307,98 +329,110 @@ func ranged()
   ranged_offhand()
 
 func aoe()
-  equip @melee_aoe@
-  ?ai.idle
-    equip wand
+  ?some(melee_aoe) &
+  ^foe ! immune_to_physical
     equip @melee_aoe@
-  return true
+  ranged()
 
 func aac(weapon)
+  // animation attack cancelling:
+  // equipping a different weapon
+  // right after the attack cancels
+  // the backswing animation,
+  // effectively increasing your
+  // attack speed
   ?ai.idle
     equip wand
   equip @weapon@
   return true
 
-func slap()
-  ?buffs.string ! pickpocket &
-  ^foe.distance <= 6
-    return aac(arm)
+func should_slap()
+  ?foe.distance > 6
+    return false
+  ?buffs.string ! pickpocket
+    return true
   ?armCD > 0 |
   ^foe = pallas | // immune
-  ^!can_activate() |
-  ^foe.distance > 6
+  ^!can_activate()
     return false
-  should_slap = true
+  return (foe.armor + foe.hp) <=
+  ^adjust_damage(arm_damage)
+
+func slap()
   aac(arm)
-  ?item.CanActivate("skeleton_arm")
+  ?item.CanActivate("skeleton_arm") &
+  ^buffs.string = pickpocket
     activate R
-    should_slap = false
   return true
 
-func smite()
+func should_smite()
   ?bladeCD > 0 |
   ^foe = pallas | // immune
   ^!can_activate() |
   ^foe.distance > 11
     return false
-  ?foe.count >= 7 | foe = boss
-    should_smite = true
-    aac(blade)
-    ?item.CanActivate("blade")
-      activate R
-      should_smite = false
-    return true
-  return false
+  return foe.count >= 7 | foe = boss
+
+func smite()
+  aac(blade)
+  ?item.CanActivate("blade")
+    activate R
+  return true
 
 func hammerOK()
   return hammerCD <= 0 | hammerCD >= 647
 
-func hammer()
+func should_hammer()
   ?!hammerOK() |
+  ^foe ! boss |
   ^!can_activate() |
   ^foe.armor <= 0 |
   ^foe.distance > 7 |
-  ^foe ! boss |
   ^(foe=dysangelos_perfected & foe.state<107)
     // delay hammering until shield animation ends
     return false
-  should_hammer = true
-  // for some reason can't use var with hammer
-  equip heavy hammer
+  return true
+
+func hammer()
+  equip heavy hammer // aac doesn't work for it
   ?item.CanActivate("hammer")
     activate R
-    should_hammer = false
   return true
 
 func bardicheOK()
   return bardCD <= 0 | bardCD >= 870
 
-func bardiche()
+func should_bardiche()
   ?!bardicheOK() |
   ^!can_activate() |
   ^foe.distance > 9 |
   ^(foe ! boss & foe.count < 5)
     return false
-  should_bard = true
+  return bardicheOK()
+
+func bardiche()
   aac(bardiche)
   ?item.CanActivate("bardiche")
     activate R
-    should_bard = false
   return true
 
 func use_abilities()
-  ?!smite()
-    ?!slap()
-      ?!bardiche()
-        ?!hammer()
-          return false
-  return true
+  ?should_smite()
+    return smite()
+  ?should_slap()
+    return slap()
+  ?should_bard()
+    return bardiche()
+  ?should_hammer()
+    return hammer()
+  return false
 
 // modes: "dps", "def"
 func fight(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
-    ?foe = immune_to_ranged
+    ?foe = immune_to_ranged |
+    ^foe = mine_walker // outranges xbow
       melee(mode)
     :
       ranged()
@@ -446,32 +480,26 @@ func progress()
       mind_dodge()
     :
       fight_boss("def")
-    //   ?foe.distance > 7
-    //     melee("def")
-    //   :
-    //     equip heavy hammer
-    //     hammer()
-    // :
-    //   fight_boss("def")
-    // cheese her by staying out of range
-    // :
-    //   ranged()
   :?loc = caves
-    ?!bardiche()
-      ?!smite()
-        ?foe.distance < 11
-          ?mindCD <= 0
-            mind_dodge()
-          :
-            fight_boss("def")
+    ?should_bard()
+      bardiche()
+    :?should_smite()
+      smite()
+    :
+      ?foe.distance < 11
+        ?mindCD <= 0
+          mind_dodge()
         :
-          ?item.potion ! empty
-            activate potion
-          ranged()
+          fight_boss("def")
+    :
+      ranged()
   :?loc = fungus_forest_boss
     fight_boss("def")
   :?loc = undead_crypt_boss
-    fight_boss("def")
+    ?foe.count > 4
+      aoe()
+    :
+      fight_boss("def")
   :?loc = bronze_guardian
     ?foe.state = 32 & foe.time = 22
       mind_dodge()
@@ -485,17 +513,26 @@ func progress()
       melee("dps")
     :?foe.state = 133
       ranged()
-    :?foe.distance <= 2
-      // don't bother debuffing
-      fight("dps")
-    :?foe.distance <= 5
-      // The shovel has an attack range of 1
-      // so it forces the player to move very
-      // very close. So close that it can avoid
-      // the attacks (snowballs)
-      equip shovel
-    : // blown away
-      fight("def")
+    :?loc.stars <= 5
+      :?foe.distance <= 2
+        // don't bother debuffing
+        fight("dps")
+      :?foe.distance <= 5
+        // The shovel has an attack range of 1
+        // so at white stars we can avoid
+        // snowballs by getting close to boss.
+        // on higher stars he blows you away
+        // immediately
+        equip shovel
+      : // blown away
+        fight("def")
+    :
+      ?foe ! hrímnir
+        aoe() // ice wall
+      :?foe.state = 133
+        ranged()
+      :
+        fight_boss("dps")
   :?loc = nagaraja
     fight_nagajara()
   :
@@ -532,7 +569,7 @@ func fight_nagajara()
 
   ?_naga = 0
     // start at the xbow range
-    ranged("dps")
+    ranged()
   :?_naga = 1
     // staff 1st poison
     equip quarterstaff
@@ -540,7 +577,7 @@ func fight_nagajara()
     _naga++
   :?_naga = 2
     // and continue to shoot
-    ranged("dps")
+    ranged()
   :?_naga = 3
     // dash into melee
     fight_boss("dps")
@@ -550,7 +587,7 @@ func fight_nagajara()
       mind_dodge()
       _naga = 0
     :
-      // mind stone on CD, try to evade
+      // mind stone on CD, try to def
       fight_boss("def")
 
 func brew_pot()
