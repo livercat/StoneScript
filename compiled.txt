@@ -192,7 +192,7 @@ func should_slap()
     return false
   ?buffs.string ! pickpocket
     return true
-  return foe.armor <= 0 & foe.hp <= arm_damage
+  return (foe.armor + foe.hp) <= arm_damage
 
 func slap()
   aac(arm)
@@ -462,7 +462,7 @@ brew_pot()
   :?foe.state = 133
     ranged("dps")
   :?foe.distance <= 2
-    melee("dps")
+    fight("dps")
   :?foe.distance <= 5
     // The shovel has an attack range of 1
     // so it forces the player to move very
@@ -470,7 +470,7 @@ brew_pot()
     // the attacks (snowballs)
     equip shovel
   : // blown away
-    melee("def")
+    fight("def")
 
 func detect_poison(pos_x, pos_y)
   >`0,0,x=@x@, y=@y@
