@@ -309,10 +309,11 @@ func ranged_offhand()
   :
     equipR @ranged_main@
 
-func ranged()
+// ranged_mode: "aoe" or "single"
+func ranged(ranged_mode)
   _main_hand = ""
   ?foe ! immune_to_physical &
-  ^foe = boss & foe.count < 3
+  ^mode = "single"
     equip @ranged_2h@
     return
   :?foe = aether & some(vigor_r)
@@ -338,7 +339,7 @@ func aoe()
   ^foe ! immune_to_physical &
   ^foe.distance <= 7
     equip @melee_aoe@
-  ranged()
+  ranged("aoe")
 
 func aac(weapon)
   // animation attack cancelling:
@@ -443,15 +444,17 @@ func fight(mode)
     ^(foe = ranged & foe.count < 3)
       // move closer
       melee(mode)
+    :?foe.count > 3
+      ranged("aoe")
     :
-      ranged()
+      ranged("single")
   // melee range
   :?foe = explode & foe.distance < 5
     mind_dodge()
   :?mindCD & free_mind
     mind_dodge()
   :?foe = immune_to_physical
-    ranged()
+    ranged("aoe")
   :?foe.count >= 4 & hp > (maxhp / 2)
     aoe()
   :
@@ -507,7 +510,7 @@ func progress()
         :
           fight_boss("def")
       :
-        ranged()
+        ranged("single")
   :?loc = fungus_forest_boss
     fight_boss("def")
   :?loc = undead_crypt_boss
@@ -527,7 +530,7 @@ func progress()
       // hammer is down
       melee("dps")
     :?foe.distance > 15 & foe.state = 2
-      ranged()
+      ranged("single")
   :?loc = icy_ridge
     free_mind = false
     ?foe.armor > 0
@@ -535,11 +538,11 @@ func progress()
     :?loc.stars > 5
       ?foe.count > 1 | foe = ice_wall
         aoe()
-      :?foe.state = 143
+      :?foe.state = 144
         // summoning ice wall
         mind_dodge()
       :?foe.state = 133
-        ranged()
+        ranged("single")
       :
         fight_boss("def")
     : // low zone level
@@ -592,7 +595,7 @@ func fight_nagajara()
 
   ?_naga = 0
     // start at the xbow range
-    ranged()
+    ranged("single")
   :?_naga = 1
     // staff 1st poison
     equip quarterstaff
@@ -600,7 +603,7 @@ func fight_nagajara()
     _naga++
   :?_naga = 2
     // and continue to shoot
-    ranged()
+    ranged("single")
   :?_naga = 3
     // dash into melee
     fight_boss("dps")
@@ -614,10 +617,7 @@ func fight_nagajara()
       fight_boss("def")
 
 func brew_pot()
-  ?loc = caves
-    brew stone + bronze
-  :
-    brew tar + bronze
+  brew tar + bronze // vampiric
 
 func reset_loop()
   _main_hand = ""
