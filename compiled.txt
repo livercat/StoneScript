@@ -67,8 +67,9 @@ var _statuses = [["smite", "Smite", "+"],
 ^["vampiric", "Vampiric", "+"],
 ^["lucky_crit_multi", "Lucky", "+"],
 ^["debuff_damage", "DmgDown!", "-"],
-^["debuff_yeti_chill", "AtkSlow", "-"],
 ^["debuff_duration_damage", "DmgDown", "-"],
+^["debuff_yeti_chill", "AtkSlow", "-"],
+^["debuff_attack_speed", "AtkSlow", "-"],
 ^["debuff_move_speed", "MoveSlow", "-"],
 ^["debuff_chill", "Chill", "-"],
 ^["stun", "Stun", "-"]]
@@ -87,6 +88,10 @@ var bladeCD = 0
 var bardCD = 0
 var dasher = 0
 var poison_stacks = 0
+ // set to true in locations
+ // where mind stone isn't needed for
+ // mechanics
+var free_mind = false
 
 // updated each frame
 mindCD = item.GetCooldown("mind")
@@ -108,9 +113,7 @@ func some(s)
   return ! string.Equals(s, "")
 
 func adjust_damage(dmg)
-  ?poison_stacks = 0
-    return dmg
-  return int.Parse(dmg) - poison_stacks
+  return dmg - poison_stacks
 
 func print_statuses()
   _good.Clear()
@@ -175,9 +178,9 @@ func draw_hud(show_foe)
 func colorize(cd, cond)
   ?cd <= 0
     ?cond
-      return "blue"
-    return "green"
-  return "red"
+      return "blue" // want to use
+    return "green" // ready
+  return "red" // on CD
 
 func can_activate()
   return item.CanActivate() & ai.enabled
@@ -309,7 +312,7 @@ func ranged_offhand()
 func ranged()
   _main_hand = ""
   ?foe ! immune_to_physical &
-  ^foe.count < 5
+  ^foe = boss & foe.count < 3
     equip @ranged_2h@
     return
   :?foe = aether & some(vigor_r)
@@ -332,7 +335,8 @@ func ranged()
 
 func aoe()
   ?some(melee_aoe) &
-  ^foe ! immune_to_physical
+  ^foe ! immune_to_physical &
+  ^foe.distance <= 7
     equip @melee_aoe@
   ranged()
 
@@ -419,14 +423,14 @@ func bardiche()
   return true
 
 func use_abilities()
-  ?should_smite()
-    return smite()
-  ?should_slap()
-    return slap()
-  ?should_bardiche()
-    return bardiche()
   ?should_hammer()
     return hammer()
+  ?should_bardiche()
+    return bardiche()
+  ?should_slap()
+    return slap()
+  ?should_smite()
+    return smite()
   return false
 
 // modes: "dps", "def"
@@ -434,12 +438,17 @@ func fight(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
     ?foe = immune_to_ranged |
-    ^foe = mine_walker // outranges xbow
+    ^foe = mine_walker | // outranges xbow
+    ^foe = cult_guard | // poisons on ranged hit
+    ^(foe = ranged & foe.count < 3)
+      // move closer
       melee(mode)
     :
       ranged()
   // melee range
   :?foe = explode & foe.distance < 5
+    mind_dodge()
+  :?mindCD & free_mind
     mind_dodge()
   :?foe = immune_to_physical
     ranged()
@@ -456,12 +465,14 @@ func fight_boss(mode)
 func progress()
   ?healwalk()
     return true
+  free_mind = true
   ?foe ! boss
     return fight("def")
 
   // only bosses below
 
   ?loc = Rocky
+    free_mind = false
     ?foe = dysangelos_elementalist
       // debuffing is risky in phase 2
       ?!use_abilities()
@@ -475,6 +486,7 @@ func progress()
     :
       fight_boss("def")
   :?loc = deadwood
+    free_mind = false
     ?foe ! poena
       return fight_boss("def")
     ?mindCD <= 0 & foe.distance < 23 & 
@@ -483,6 +495,7 @@ func progress()
     :
       fight_boss("def")
   :?loc = caves
+    free_mind = false
     ?should_bardiche()
       bardiche()
     :?should_smite()
@@ -498,11 +511,16 @@ func progress()
   :?loc = fungus_forest_boss
     fight_boss("def")
   :?loc = undead_crypt_boss
+    free_mind = false
     ?foe.count > 4
-      aoe()
+      ?foe.distance < 15 & mindCD
+        mind_dodge()
+      :
+        aoe()
     :
       fight_boss("def")
   :?loc = bronze_guardian
+    free_mind = false
     ?foe.state = 32 & foe.time = 22
       mind_dodge()
     :?foe.state = 33
@@ -511,11 +529,20 @@ func progress()
     :?foe.distance > 15 & foe.state = 2
       ranged()
   :?loc = icy_ridge
+    free_mind = false
     ?foe.armor > 0
-      melee("dps")
-    :?foe.state = 133
-      ranged()
-    :?loc.stars <= 5
+      fight_boss("dps")
+    :?loc.stars > 5
+      ?foe.count > 1 | foe = ice_wall
+        aoe()
+      :?foe.state = 143
+        // summoning ice wall
+        mind_dodge()
+      :?foe.state = 133
+        ranged()
+      :
+        fight_boss("def")
+    : // low zone level
       ?foe.distance <= 2
         // don't bother debuffing
         fight("dps")
@@ -528,14 +555,8 @@ func progress()
         equip shovel
       : // blown away
         fight("def")
-    :
-      ?foe ! hrímnir
-        aoe() // ice wall
-      :?foe.state = 133
-        ranged()
-      :
-        fight_boss("dps")
   :?loc = nagaraja
+    free_mind = false
     fight_nagajara()
   :
     fight_boss("def")
