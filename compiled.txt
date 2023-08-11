@@ -457,7 +457,7 @@ func fight(mode)
   // melee range
   :?foe = explode & foe.distance < 5
     mind_dodge()
-  :?mindCD & free_mind
+  :?free_mind & mindCD <= 0 // backflip!
     mind_dodge()
   :?foe = immune_to_physical
     ranged("aoe")
