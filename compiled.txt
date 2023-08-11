@@ -50,6 +50,7 @@ var chill = "❄:debuff_chill:6:" // depends on spd
 
 // internal use
 var _main_hand = "" // weapon switching
+var _at_hrimnir = false // hrimnir fight
 var _naga = 0 // nagaraja fight
 var _cache = [] // debug use
 var _good = [] // current buffs
@@ -77,18 +78,23 @@ var _statuses = [["smite", "Smite", "+"],
 // poor man's hashmap
 var _status_uids = _fill_status_uids()
 
-var poison_debuff = "debuff_duration_damage"
-var dmg_debuff = "debuff_damage"
+var dmg_debuffs = [
+^"debuff_damage", "debuff_duration_damage"]
+var slow_debuffs = [
+^"debuff_chill", "debuff_move_speed"]
+
 var mindCD = 0
 var staffCD = 0
 var bashCD = 0
 var dashCD = 0
 var armCD = 0
 var hammerCD = 0
-var bladeCD = 0
+var smiteCD = 0
 var bardCD = 0
 var dasher = 0
+var slowed = false
 var poison_stacks = 0
+var low_hp = 0
  // set to true in locations
  // where mind stone isn't needed for
  // mechanics
@@ -101,8 +107,9 @@ bashCD = item.GetCooldown("bash")
 dashCD = item.GetCooldown("dash")
 armCD = item.GetCooldown("skeleton_arm")
 hammerCD = item.GetCooldown("hammer")
-bladeCD = item.GetCooldown("blade")
+smiteCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
+low_hp = hp < maxhp / 2
 
 func _fill_status_uids()
   var uids = []
@@ -120,6 +127,7 @@ func print_statuses()
   _good.Clear()
   _bad.Clear()
   poison_stacks = 0
+  slowed = false
   for s : [buffs.string, debuffs.string]
     // format: *:name:count:duration,...
     var splt = string.Split(s, ":", ",", false)
@@ -127,9 +135,11 @@ func print_statuses()
       // we only need names
       for i = 1 .. splt.Count() - 3
         var st_uid = splt[i]
-        ?string.Equals(st_uid, poison_debuff) |
-        ^string.Equals(st_uid, dmg_debuff)
-          poison_stacks = int.Parse(splt[i+1])
+        var amount = int.Parse(splt[i+1])
+        ?dmg_debuffs.IndexOf(st_uid) ! -1
+          poison_stacks = poison_stacks + amount
+        :?slow_debuffs.IndexOf(st_uid) ! -1
+          slowed = true
         var idx = _status_uids.IndexOf(st_uid)
         ?idx ! -1
           var info = _statuses[idx]
@@ -158,23 +168,21 @@ func draw_hud(show_foe)
   >`1,8,#@colorize(bardCD, 
   ^should_bardiche())@,Bard 
   ^@time.FormatDigital(bardCD)@
-  >`1,9,#@colorize(bladeCD, 
+  >`1,9,#@colorize(smiteCD, 
   ^should_smite())@,Blade 
-  ^@time.FormatDigital(bladeCD)@
+  ^@time.FormatDigital(smiteCD)@
   >`1,10,#@colorize(armCD, 
   ^should_slap())@,Arm 
   ^@time.FormatDigital(armCD)@
 
   ?show_foe
-    >`1,25,#DCDCDC,~@foe@
+    >`1,25,#7A8F93,~@foe@
     ?foe
-      >`1,@16@,#DCDCDC,Count: @foe.count@
-      >`1,@17@,#DCDCDC,@foe.name@
-      >`1,@18@,#DCDCDC,Foe DMG: @foe.damage@
-      >`1,@19@,#DCDCDC,Foe State: @foe.state@
-      >`1,@20@,#DCDCDC,Foe Distance: @foe.distance@
-    :
-      return
+      >`1,16,#7A8F93,Count: @foe.count@
+      >`1,17,#7A8F93,@foe.name@
+      >`1,18,#7A8F93,Foe DMG: @foe.damage@
+      >`1,19,#7A8F93,Foe State: @foe.state@
+      >`1,20,#7A8F93,Foe Distance: @foe.distance@
 
 func colorize(cd, cond)
   ?cd <= 0
@@ -226,7 +234,7 @@ func mind_dodge()
   shield()
 
 func shield()
-  ?hp < (maxhp / 2) & some(vigor_sh)
+  ?low_hp & some(vigor_sh)
     equipR @vigor_sh@
   :?foe = aether & some(vigor_sh)
     equipR @vigor_sh@
@@ -250,7 +258,7 @@ func main_hand(weapon)
   equipL @weapon@
   return true
 
-// modes: "dps", "def"
+// mode: "dps" or "def"
 func offhand(mode)
   dasher = dash()
   ?dasher ! false
@@ -264,12 +272,12 @@ func offhand(mode)
     shield()
   return true
 
-// modes: "dps", "def"
+// mode: "dps" or "def"
 func melee(mode)
   _main_hand = ""
   ?use_abilities()
-    return
-  :?hp < (maxhp / 2) & some(vigor_1h)
+    return true
+  :?low_hp & some(vigor_1h)
     main_hand(vigor_1h)
   :?foe = aether & some(vigor_1h)
     main_hand(vigor_1h)
@@ -289,6 +297,7 @@ func melee(mode)
     main_hand("sword")
   offhand(mode)
 
+// mode: "dps" or "def"
 func debuff(mode)
   ?foe.buffs.string = "buff_protection" |
   ^foe.buffs.string = "poena_mirror"
@@ -314,10 +323,12 @@ func ranged_offhand()
 func ranged(ranged_mode)
   _main_hand = ""
   ?foe ! immune_to_physical &
-  ^mode = "single"
+  ^(ranged_mode = "single" | 
+  ^(foe = spawner & foe.distance > 15 & 
+  ^foe.count < 3))
     equip @ranged_2h@
     return
-  :?foe = aether & some(vigor_r)
+  ?foe = aether & some(vigor_r)
     main_hand(vigor_r)
   :?foe = fire & some(aether_r)
     main_hand(aether_r)
@@ -371,10 +382,11 @@ func slap()
   ?item.CanActivate("skeleton_arm") &
   ^buffs.string = pickpocket
     activate R
-  return true
+    return true
+  return false
 
 func should_smite()
-  ?bladeCD > 0 |
+  ?smiteCD > 0 |
   ^foe = pallas | // immune
   ^!can_activate() |
   ^foe.distance > 11
@@ -387,7 +399,8 @@ func smite()
   aac(blade)
   ?item.CanActivate("blade")
     activate R
-  return true
+    return true
+  return false
 
 func hammerOK()
   return hammerCD <= 0 | hammerCD >= 647
@@ -407,7 +420,8 @@ func hammer()
   equip heavy hammer // aac doesn't work for it
   ?item.CanActivate("hammer")
     activate R
-  return true
+    return true
+  return false
 
 func bardicheOK()
   return bardCD <= 0 | bardCD >= 870
@@ -418,13 +432,14 @@ func should_bardiche()
   ^foe.distance > 9 |
   ^(foe ! boss & foe.count < 5)
     return false
-  return bardicheOK()
+  return true
 
 func bardiche()
   aac(bardiche)
   ?item.CanActivate("bardiche")
     activate R
-  return true
+    return true
+  return false
 
 func use_abilities()
   ?should_hammer()
@@ -437,7 +452,7 @@ func use_abilities()
     return smite()
   return false
 
-// modes: "dps", "def"
+// mode: "dps" or "def"
 func fight(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
@@ -457,7 +472,8 @@ func fight(mode)
   // melee range
   :?foe = explode & foe.distance < 5
     mind_dodge()
-  :?free_mind & mindCD <= 0 // backflip!
+  :?free_mind & foe.count > 2 & mindCD <= 0
+    // backflip!
     mind_dodge()
   :?foe = immune_to_physical
     ranged("aoe")
@@ -466,7 +482,7 @@ func fight(mode)
   :
     melee(mode)
 
-func fight_boss(mode)
+func melee_boss(mode)
   ?!use_abilities()
     ?!debuff(mode)
       melee(mode)
@@ -474,13 +490,13 @@ func fight_boss(mode)
 func progress()
   ?healwalk()
     return true
-  free_mind = true
-  ?foe ! boss
+  ?foe ! boss & !_at_hrimnir
+    free_mind = true
     return fight("def")
 
   // only bosses below
 
-  ?loc = Rocky
+  ?loc = rocky
     free_mind = false
     ?foe = dysangelos_elementalist
       // debuffing is risky in phase 2
@@ -491,87 +507,104 @@ func progress()
         // dodge the orb ray
         mind_dodge()
       :
-        fight_boss("dps")
+        melee_boss("dps")
     :
-      fight_boss("def")
+      melee_boss("def")
+
   :?loc = deadwood
     free_mind = false
     ?foe ! poena
-      return fight_boss("def")
+      return melee_boss("def")
     ?mindCD <= 0 & foe.distance < 23 & 
     ^foe.state = 32 & foe.time > 37
       mind_dodge()
     :
-      fight_boss("def")
+      melee_boss("def")
+
   :?loc = caves
     free_mind = false
     ?should_bardiche()
       bardiche()
     :?should_smite()
       smite()
-    :
-      ?foe.distance < 11
-        ?mindCD <= 0
-          mind_dodge()
-        :
-          fight_boss("def")
+    :?foe.distance < 11
+      ?mindCD <= 0
+        mind_dodge()
       :
-        ranged("single")
+        melee_boss("def")
+    :
+      ranged("single")
+
   :?loc = fungus_forest_boss
-    fight_boss("def")
+    melee_boss("def")
+
   :?loc = undead_crypt_boss
     free_mind = false
     ?foe.count > 4
-      ?foe.distance < 15 & mindCD
+      ?foe.distance < 15 & mindCD <= 0
         mind_dodge()
       :
         aoe()
     :
-      fight_boss("def")
+      melee_boss("def")
+
   :?loc = bronze_guardian
     free_mind = false
     ?foe.state = 32 & foe.time = 22
       mind_dodge()
     :?foe.state = 33
       // hammer is down
-      melee("dps")
+      melee("dps") // don't bother debuffing
     :?foe.distance > 15 & foe.state = 2
       ranged("single")
+  
   :?loc = icy_ridge
     free_mind = false
-    ?foe.armor > 0
-      fight_boss("dps")
-    :?loc.stars > 5
-      ?foe.state = 32 | foe.state = 33 // snowballs
-        ?foe.count > 1 | foe = ice_wall
-          aoe()
-        :
-          ranged("single")
-      :?foe.state < 3 // transition
-        ranged("aoe")
-      :?foe.state = 142
-        // summoning ice wall
-        mind_dodge()
-      :
-        ranged("single")
-    : // low zone level
-      ?foe.distance <= 2
-        // don't bother debuffing
-        fight("dps")
-      :?foe.distance <= 5
-        // The shovel has an attack range of 1
-        // so at white stars we can avoid
-        // snowballs by getting close to boss.
-        // on higher stars he blows you away
-        // immediately
-        equip shovel
-      : // blown away
-        fight("def")
+    fight_hrimnir()
+
   :?loc = nagaraja
     free_mind = false
     fight_nagajara()
   :
-    fight_boss("def")
+    // unknown boss
+    melee_boss("def")
+
+func fight_hrimnir()
+  _at_hrimnir = true
+  ?foe = boss & foe.armor > 0
+    ?should_slap()
+      slap() // get free evade stacks
+    :
+      melee("dps") // don't debuff
+  :?loc.stars <= 5 // try to cheese
+    ?foe.distance <= 2
+      melee("dps") // don't debuff
+    :?foe.distance <= 5
+      // The shovel has an attack range of 1
+      // so at white stars we can avoid
+      // snowballs by getting close to boss.
+      // on higher stars he blows you away
+      // immediately
+      equip shovel
+    : // blown away
+      ?slowed
+        ranged("single")
+      :
+        melee("def")
+  :?foe.count > 1
+    ?bardicheOK() & can_activate()
+      bardiche()
+    :?smiteCD <= 0 & can_activate()
+      smite()
+    :?foe.count > 2 // adds
+      aoe()
+    :
+      melee("def") // ice wall
+  :?(low_hp & !slowed & foe.count = 1) |
+  ^(foe.distance <= 7 & hp < maxhp)
+    melee_boss("def") // heal up
+  :
+    ranged("single")
 
 func detect_poison(pos_x, pos_y)
   >`0,0,x=@x@, y=@y@
@@ -615,7 +648,7 @@ func fight_nagajara()
     ranged("single")
   :?_naga = 3
     // dash into melee
-    fight_boss("dps")
+    melee_boss("dps")
   :?_naga >= 4
     ?mindCD <= 0
       // dodge back and repeat
@@ -623,7 +656,7 @@ func fight_nagajara()
       _naga = 0
     :
       // mind stone on CD, try to def
-      fight_boss("def")
+      melee_boss("def")
 
 func brew_pot()
   brew tar + bronze // vampiric
@@ -633,6 +666,7 @@ func reset_loop()
   _naga = 0
   _cache.Clear()
   _stu.Clear()
+  _at_hrimnir = false
 
 ?loc.begin & item.potion = empty
   brew_pot()
