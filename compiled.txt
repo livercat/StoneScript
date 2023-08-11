@@ -43,6 +43,7 @@ var default_sh = vigor_sh
 var melee_aoe = ""
 
 // runtime settings
+var blade_damage = 80 // depends on *
 var arm_damage = 32 // depends on *
 var pickpocket = "pick_pocket:2" // depends on *
 var chill = "❄:debuff_chill:6:" // depends on spd
@@ -142,9 +143,9 @@ func print_statuses()
         ^_stu.IndexOf(st_uid) = -1
           _stu.Add(st_uid)
         i = i + 3
-  >`1,22,+ @string.Join(", ", _good)@
-  >`1,23,- @string.Join(", ", _bad)@
-  >`1,24,? @string.Join(", ", _stu)@
+  >`1,22,#00A300,+ @string.Join(", ", _good)@
+  >`1,23,#FE6800,- @string.Join(", ", _bad)@
+  >`1,24,#F008B2,? @string.Join(", ", _stu)@
 
 func draw_hud(show_foe)
   print_statuses()
@@ -378,7 +379,9 @@ func should_smite()
   ^!can_activate() |
   ^foe.distance > 11
     return false
-  return foe.count >= 7 | foe = boss
+  return foe = boss |
+  ^(foe.count >= 7 & foe.hp <= 
+  ^adjust_damage(blade_damage))
 
 func smite()
   aac(blade)
@@ -445,7 +448,10 @@ func fight(mode)
       // move closer
       melee(mode)
     :?foe.count > 3
-      ranged("aoe")
+      ?should_smite()
+        smite()
+      :
+        ranged("aoe")
     :
       ranged("single")
   // melee range
@@ -536,9 +542,12 @@ func progress()
     ?foe.armor > 0
       fight_boss("dps")
     :?loc.stars > 5
-      ?foe.count > 1 | foe = ice_wall
+      ?foe.count > 1 | foe = ice_wall |
+      ^foe.state = 32
         aoe()
-      :?foe.state = 144
+      :?foe.state < 3 // transition
+        ranged("single")
+      :?foe.state = 142
         // summoning ice wall
         mind_dodge()
       :?foe.state = 133
