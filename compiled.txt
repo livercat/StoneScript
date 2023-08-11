@@ -11,29 +11,29 @@
 
 // your weapons
 var fire_sh = ""
-var poison_sh = "poison shield ap + 4"
+var poison_sh = "poison shield *8 ap"
 var ice_sh = ""
 var aether_sh = ""
-var vigor_sh = "vigor shield ah + 4"
+var vigor_sh = "vigor shield *9 ah"
 
-var fire_1h = "fire sword dF + 4"
-var poison_1h = "posion sword dP + 4"
-var ice_1h = "ice sword dI +4"
-var aether_1h = "aether sword D +4"
-var vigor_1h = "vigor sword dL +4"
+var fire_1h = "fire sword *7 dF"
+var poison_1h = "posion sword *8 dP"
+var ice_1h = "ice sword *6 dI"
+var aether_1h = "aether sword *7 D"
+var vigor_1h = "vigor sword *9 dL"
 
-var fire_r = "fire wand D + 2"
-var poison_r = "poison wand D + 2"
+var fire_r = "fire wand *7 D"
+var poison_r = "poison wand *8 D"
 var ice_r = ""
 var aether_r = ""
 var vigor_r = ""
 
 var ranged_2h = "repeating crossbow *9"
-var bardiche = "bardiche *8"
+var bardiche = "bardiche *9"
+var dashing = "dashing shield *7"
+var bashing = "bashing shield"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
-var dashing = "dashing shield + 3"
-var bashing = "bashing shield + 4"
 
 var ranged_main = poison_r
 var ranged_off = fire_r
