@@ -482,9 +482,17 @@ func fight(mode)
   :
     melee(mode)
 
+// mode: "dps", "def" or "auto"
 func melee_boss(mode)
-  ?!use_abilities()
-    ?!debuff(mode)
+  ?mode = "auto"
+    ?low_hp
+      mode = "def"
+    :
+      mode = "dps"
+  var used_r = use_abilities()
+  ?!used_r
+    var debuffed = debuff(mode)
+    ?!debuffed
       melee(mode)
   
 func progress()
@@ -509,17 +517,17 @@ func progress()
       :
         melee_boss("dps")
     :
-      melee_boss("def")
+      melee_boss("auto")
 
   :?loc = deadwood
     free_mind = false
     ?foe ! poena
-      return melee_boss("def")
+      return melee_boss("auto")
     ?mindCD <= 0 & foe.distance < 23 & 
     ^foe.state = 32 & foe.time > 37
       mind_dodge()
     :
-      melee_boss("def")
+      melee_boss("auto")
 
   :?loc = caves
     free_mind = false
@@ -531,12 +539,12 @@ func progress()
       ?mindCD <= 0
         mind_dodge()
       :
-        melee_boss("def")
+        melee_boss("auto")
     :
       ranged("single")
 
   :?loc = fungus_forest_boss
-    melee_boss("def")
+    melee_boss("auto")
 
   :?loc = undead_crypt_boss
     free_mind = false
@@ -546,7 +554,7 @@ func progress()
       :
         aoe()
     :
-      melee_boss("def")
+      melee_boss("auto")
 
   :?loc = bronze_guardian
     free_mind = false
@@ -567,7 +575,7 @@ func progress()
     fight_nagajara()
   :
     // unknown boss
-    melee_boss("def")
+    melee_boss("auto")
 
 func fight_hrimnir()
   _at_hrimnir = true
@@ -590,13 +598,15 @@ func fight_hrimnir()
       ?slowed
         ranged("single")
       :
-        melee("def")
-  // blowing
-  :?foe.state = 143 | foe.state = 144
+        melee("auto")
+  :?foe.state = 143 | foe.state = 144 // blowing
     ranged("single")
   :?foe.count > 1 // deal with adds
-    ?slowed
-      aoe() // don't waste time on movement
+    ?slowed // don't waste time on movement
+      ?foe.count = 2
+        ranged("aoe")
+      :
+        ranged("single")
     :?smiteCD <= 0 & can_activate()
       smite()
     :?bardicheOK() & can_activate() &
@@ -605,9 +615,9 @@ func fight_hrimnir()
     :?foe.count > 2 // elementals
       aoe()
     :
-      melee("def") // ice wall
+      melee("auto") // ice wall
   :?!slowed
-    melee_boss("def")
+    melee_boss("auto")
   :
     ranged("single")
 
