@@ -591,18 +591,18 @@ func fight_hrimnir()
         ranged("single")
       :
         melee("def")
-  :?foe.count > 1
-    ?bardicheOK() & can_activate()
-      bardiche()
-    :?smiteCD <= 0 & can_activate()
+  :?foe.count > 1 // deal with adds
+    ?smiteCD <= 0 & can_activate()
       smite()
-    :?foe.count > 2 // adds
+    :?bardicheOK() & can_activate() &
+    ^foe.distance <= 9
+      bardiche()
+    :?foe.count > 2 // elementals
       aoe()
     :
       melee("def") // ice wall
-  :?(low_hp & !slowed & foe.count = 1) |
-  ^(foe.distance <= 7 & hp < maxhp)
-    melee_boss("def") // heal up
+  :?!slowed
+    melee_boss("def")
   :
     ranged("single")
 
