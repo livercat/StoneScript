@@ -156,8 +156,10 @@ func parse_statuses()
         var idx = _status_uids.IndexOf(st_uid)
         ?idx ! -1
           var info = _statuses[idx]
-          var st = string.Format("{0}({1})",
-          ^info[1], splt[i+1])
+          var dur = int.Parse(splt[i+2])
+          var st = string.Format("{0}({1}) {2}",
+          ^info[1], splt[i+1],
+          ^time.FormatDigital(dur))
           ?info[2] = "+"
             _good.Add(st)
           :
