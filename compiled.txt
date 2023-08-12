@@ -407,6 +407,7 @@ func slapOK()
   return can_activate() & armCD <= 0 &
   ^foe.distance <= 6 &
   ^foe ! immune_to_physical &
+  ^buffs.string = max_pickpocket &
   ^foe ! pallas // immune
 
 func should_slap()
@@ -421,8 +422,7 @@ func should_slap()
 
 func slap()
   aac(arm)
-  ?item.CanActivate("skeleton_arm") &
-  ^buffs.string = max_pickpocket
+  ?item.CanActivate("skeleton_arm")
     activate R
   return true
 
