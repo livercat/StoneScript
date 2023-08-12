@@ -12,37 +12,46 @@
 // main logic is in following functions:
 // prelude() - collects buffs/debuffs info
 // draw_ui() - draws UI :)
-// progress() - top-level choice of strategy
+// progress() - top-level strategy 
+//              and boss mechanics
 // fight() - equips weapons and activates skills
 
 /***************
 **   Weapons  **
 ***************/
+
+// shields
 var fire_sh = ""
 var poison_sh = "poison shield *8 ap"
 var ice_sh = ""
 var aether_sh = ""
 var vigor_sh = "vigor shield *9 ah"
+var dashing = "dashing shield *7"
 
+// one-handed melee
 var fire_1h = "fire sword *7 dF"
 var poison_1h = "posion sword *8 dP"
 var ice_1h = "ice sword *6 dI"
 var aether_1h = "aether sword *7 D"
 var vigor_1h = "vigor sword *9 dL"
 
+// one-handed ranged
 var fire_r = "fire wand *7 D"
 var poison_r = "poison wand *8 D"
 var ice_r = ""
 var aether_r = ""
 var vigor_r = ""
 
+// 2-handed ranged
 var ranged_2h = "repeating crossbow *9"
+
+// lost items
 var bardiche = "bardiche *9"
-var dashing = "dashing shield *7"
 var bashing = "bashing shield"
 var blade = "blade of the fallen god"
 var arm = "skeleton arm"
 
+// your best weapons
 var ranged_main = poison_r
 var ranged_off = fire_r
 var melee_main = vigor_1h
@@ -246,12 +255,24 @@ func colorize(cd, cond)
 func can_activate()
   return item.CanActivate() & ai.enabled
 
+func idle()
+  ?hp < maxhp
+    equipL ouroboros
+  :?armor < maxarmor
+    equipL quest
+  :?pickup.distance < 8
+    equipL star
+    equipR triskelion
+  :
+    equipL triskelion
+  shield()
+
 func healwalk()
-  ?foe.distance < 25 & hp < (maxhp / 4) &
-  ^(item.potion = "healing" | 
-  ^item.potion = "vampiric")
-    activate potion
   ?foe & foe.distance < 23
+    ?hp < (maxhp / 4) &
+    ^(item.potion = "healing" | 
+    ^item.potion = "vampiric")
+      activate potion
     return false
   :?pickup.distance < 8
     equipL star
@@ -263,11 +284,7 @@ func healwalk()
       ?item.CanActivate("quarterstaff")
         activate R
     :
-      ?hp < maxhp
-        equipL ouroboros
-      :
-        equipL triskelion
-      shield()
+      idle()
   return true
 
 func can_backflip()
@@ -588,6 +605,8 @@ func melee_boss(mode)
       melee(mode)
   
 func progress()
+  ?ai.paused
+    return idle()
   ?healwalk()
     return true
   ?foe ! boss & !_at_hrimnir
@@ -620,10 +639,11 @@ func progress()
       melee_boss("auto")
 
   :?loc = caves
-    free_mind = false
-    ?mindCD <= 0 & foe.state = 133 & 
-    ^foe.time = 17
-      backflip()
+    ?foe.state = 133 & 
+    ^(foe.time > 15 & foe_time < 18)
+      // try to evade bites
+      equipL quest
+      equipR @vigor_sh@
     :?bardCD <= 0 | bardCD >= 870 | low_hp
       melee_boss("auto")
     :
