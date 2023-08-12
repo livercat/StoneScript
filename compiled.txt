@@ -305,7 +305,7 @@ func melee(mode)
   mode = select_mode(mode)
   _main_hand = ""
   ?use_abilities()
-    return true
+      return true
   :?low_hp & some(vigor_1h)
     main_hand(vigor_1h)
   :?foe = aether & some(vigor_1h)
@@ -400,12 +400,13 @@ func aac(weapon)
 
 func slapOK()
   return can_activate() & armCD <= 0 &
+  ^foe.distance <= 6 &
   ^foe ! immune_to_physical &
   ^foe ! pallas // immune
 
 func should_slap()
-  ?foe.distance <= 6 &
-  ^buffs.string ! max_pickpocket
+  ?buffs.string ! max_pickpocket &
+  ^foe.distance <= 6
     return true
   :?slapOK()
     ?pickpocket_quest
@@ -418,8 +419,7 @@ func slap()
   ?item.CanActivate("skeleton_arm") &
   ^buffs.string = max_pickpocket
     activate R
-    return true
-  return false
+  return true
 
 func smiteOK()
   return can_activate() & smiteCD <= 0 &
@@ -434,8 +434,7 @@ func smite()
   aac(blade)
   ?item.CanActivate("blade")
     activate R
-    return true
-  return false
+  return true
 
 func hammerOK()
   return can_activate() &
@@ -446,14 +445,13 @@ func hammerOK()
   ^(foe!dysangelos_perfected | foe.state>=107)
 
 func should_hammer()
-  return hammerOK() & (foe = boss)
+  return hammerOK() & foe = boss
 
 func hammer()
   equip heavy hammer // aac doesn't work for it
   ?item.CanActivate("hammer")
     activate R
-    return true
-  return false
+  return true
 
 func bardicheOK()
   return can_activate() &
@@ -462,15 +460,13 @@ func bardicheOK()
   ^foe.distance <= 9
 
 func should_bardiche()
-  return bardicheOK() & 
-  ^(foe = boss | foe.count > 4)
+  return bardicheOK() & foe = boss
 
 func bardiche()
   aac(bardiche)
   ?item.CanActivate("bardiche")
     activate R
-    return true
-  return false
+  return true
 
 func use_abilities()
   ?should_hammer()
@@ -491,7 +487,7 @@ func fight(mode)
     ?foe = immune_to_ranged |
     ^foe = mine_walker | // outranges xbow
     ^foe = cult_guard | // poisons on ranged hit
-    ^(foe = ranged & foe.count < 3)
+    ^foe = ranged
       // move closer
       melee(mode)
     :?should_smite()
