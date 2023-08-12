@@ -10,7 +10,8 @@
 // but Mindstone has line limit of 50 chars
 
 // main logic is in following functions:
-// prelude(show_foe) - draws UI and collects info
+// prelude() - collects buffs/debuffs info
+// draw_ui() - draws UI :)
 // progress() - top-level choice of strategy
 // fight() - equips weapons and activates skills
 
@@ -52,18 +53,37 @@ var melee_aoe = ""
 /*********************
 ** Runtime Settings **
 *********************/
-var smite_damage = 80 // depends on * level
+// depends on * level of blade of the fallen god
+var smite_damage = 80
+
 // at least this many enemies must be present
 // to trigger smite
 var smite_treshold = 7
-var chill = "❄:debuff_chill:6:" // depends on spd
+
+// depends on spd of your ice sword dI
+var chill = "❄:debuff_chill:6:"
+
 // set to true if you're doing skeletal arm quests
 var pickpocket_quest = false
-var arm_damage = 32 // depends on * level
-var max_pickpocket = "pick_pocket:2" // depends on *
+
+// depends on * level of skeleton arm
+var arm_damage = 32
+
+// depends on * level of skeleton arm
+var max_pickpocket = "pick_pocket:2"
+
 // slower but safer, especially if you don't have
 // good vigor shield and weapon
 var prefer_ranged = false
+
+// show enemy info (useful for debug/research)
+var ui_show_foes = false
+
+// show ability cooldowns
+var ui_show_cd = true
+
+// show your buffs/debuffs
+var ui_show_statuses = false
 
 
 
@@ -169,16 +189,10 @@ func parse_statuses()
           _stu.Add(st_uid)
         i = i + 3
 
-func prelude(show_foe)
+func prelude()
   parse_statuses()
-  >`1,22,#00A300,+ @string.Join(", ", _good)@
-  >`1,23,#FE6800,- @string.Join(", ", _bad)@
-  >`1,24,#F008B2,? @string.Join(", ", _stu)@
-
   low_hp = hp < (maxhp / 2)
   foe_ehp = foe.armor + foe.hp
-
-  // cooldowns
   mindCD = item.GetCooldown("mind")
   staffCD = item.GetCooldown("quarterstaff")
   bashCD = item.GetCooldown("bash")
@@ -187,22 +201,30 @@ func prelude(show_foe)
   hammerCD = item.GetCooldown("hammer")
   smiteCD = item.GetCooldown("blade")
   bardCD = item.GetCooldown("bardiche")
-  >`1,6,#@colorize(mindCD, false)@,Mind 
-  ^@time.FormatDigital(mindCD)@
-  >`1,7,#@colorize(hammerCD, 
-  ^should_hammer())@,Hammer 
-  ^@time.FormatDigital(hammerCD)@
-  >`1,8,#@colorize(bardCD, 
-  ^should_bard())@,Bard 
-  ^@time.FormatDigital(bardCD)@
-  >`1,9,#@colorize(smiteCD, 
-  ^should_smite())@,Blade 
-  ^@time.FormatDigital(smiteCD)@
-  >`1,10,#@colorize(armCD, 
-  ^should_slap())@,Arm 
-  ^@time.FormatDigital(armCD)@
 
-  ?show_foe
+func draw_ui()
+  ?ui_show_statuses
+    >`1,22,#00A300,+ @string.Join(", ", _good)@
+    >`1,23,#FE6800,- @string.Join(", ", _bad)@
+    >`1,24,#F008B2,? @string.Join(", ", _stu)@
+
+  ?ui_show_cd
+    >`1,6,#@colorize(mindCD, false)@,Mind 
+    ^@time.FormatDigital(mindCD)@
+    >`1,7,#@colorize(hammerCD, 
+    ^should_hammer())@,Hammer 
+    ^@time.FormatDigital(hammerCD)@
+    >`1,8,#@colorize(bardCD, 
+    ^should_bard())@,Bard 
+    ^@time.FormatDigital(bardCD)@
+    >`1,9,#@colorize(smiteCD, 
+    ^should_smite())@,Blade 
+    ^@time.FormatDigital(smiteCD)@
+    >`1,10,#@colorize(armCD, 
+    ^should_slap())@,Arm 
+    ^@time.FormatDigital(armCD)@
+
+  ?ui_show_foes
     >`1,25,#7A8F93,~@foe@
     ?foe
       >`1,15,#7A8F93,Count: @foe.count@
@@ -753,6 +775,6 @@ func reset_loop()
 ?loc.loop
   reset_loop()
 
-// if true, shows a lot of enemy info
-prelude(false)
+prelude()
+draw_ui()
 progress()
