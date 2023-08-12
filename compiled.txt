@@ -349,13 +349,18 @@ func ranged_offhand()
   :
     equipR @ranged_main@
 
+func medium_range_foe()
+  return (foe = whip controller |
+  ^foe = mine_walker)
+
 // ranged_mode: "aoe" or "single"
 func ranged(ranged_mode)
   _main_hand = ""
   ?foe ! immune_to_physical &
   ^(ranged_mode = "single" | 
   ^(foe = spawner & foe.distance > 15 & 
-  ^foe.count < 3))
+  ^foe.count < 3) | 
+  ^foe.distance >= 22 & medium_range_foe())
     equip @ranged_2h@
     return
   ?foe = aether & some(vigor_r)
@@ -406,7 +411,7 @@ func slapOK()
 
 func should_slap()
   ?buffs.string ! max_pickpocket &
-  ^foe.distance <= 6
+  ^foe.distance <= 6 & !low_hp
     return true
   :?slapOK()
     ?pickpocket_quest
@@ -484,6 +489,9 @@ func fight(mode)
   mode = select_mode(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
+    ?medium_range_foe() & free_mind & mindCD <= 0
+      // backflip!
+      mind_dodge()
     ?foe = immune_to_ranged |
     ^foe = mine_walker | // outranges xbow
     ^foe = cult_guard | // poisons on ranged hit
