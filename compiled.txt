@@ -287,6 +287,10 @@ func healwalk()
       idle()
   return true
 
+func shield_evade()
+  equipL quest
+  equipR @vigor_sh@
+
 func can_backflip()
   return free_mind & mindCD <= 0 &
    // don't jump into the wall
@@ -460,7 +464,7 @@ func can_slap()
   ^foe.distance <= 6 &
   ^foe ! immune_to_physical &
   ^buffs.string = max_pickpocket &
-  ^foe ! pallas // immune
+  ^foe ! pallas & foe ! bolesh // immune
 
 func should_slap()
   ?buffs.string ! max_pickpocket &
@@ -639,13 +643,16 @@ func progress()
       melee_boss("auto")
 
   :?loc = caves
-    ?foe.state = 133 & 
-    ^(foe.time > 15 & foe_time < 18)
+    free_mind = false
+    ?foe.state = 133 &
+    ^(foe.time > 10 & foe.time < 20)
       // try to evade bites
-      equipL quest
-      equipR @vigor_sh@
-    :?bardCD <= 0 | bardCD >= 870 | low_hp
+      shield_evade()
+    :?(bardCD <= 0 | bardCD >= 870) &
+    ^mindCD <= 0
       melee_boss("auto")
+    :?mindCD <= 0 & foe.distance < 10
+      backflip()
     :
       ranged("single")
 
