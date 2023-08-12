@@ -79,9 +79,9 @@ var _ignore_st = [
   "bardiche_buff_crit_chance",
   "bardiche_buff_crit_mult",
   "bardiche_buff_move_speed",
-  "pallas_phase_2_debuff",
 ]
-var _statuses = [["smite", "Smite", "+"], 
+var _statuses = [
+^["smite", "Smite", "+"], 
 ^["pick_pocket", "Pickpocket", "+"],
 ^["vampiric", "Vampiric", "+"],
 ^["lucky_crit_multi", "Lucky", "+"],
@@ -91,7 +91,9 @@ var _statuses = [["smite", "Smite", "+"],
 ^["debuff_attack_speed", "AtkSlow", "-"],
 ^["debuff_move_speed", "MoveSlow", "-"],
 ^["debuff_chill", "Chill", "-"],
-^["stun", "Stun", "-"]]
+^["stun", "Stun", "-"],
+^["pallas_phase2_debuff", "RangeDown", "-"],
+]
 // poor man's hashmap
 var _status_uids = _fill_status_uids()
 
@@ -215,7 +217,9 @@ func can_activate()
   return item.CanActivate() & ai.enabled
 
 func can_backflip()
-  return free_mind & mindCD <= 0
+  return free_mind & mindCD <= 0 &
+   // don't jump into the wall
+  ^screen.FromWorldX(pos.x) > 5
 
 func healwalk()
   ?foe.distance < 25 & hp < (maxhp / 4) &
@@ -242,8 +246,8 @@ func healwalk()
   return true
 
 func dash()
-  ?foe.distance >= 10 & 
-  ?foe.distance <= 16 & 
+  ?foe.distance >= 10 &
+  ^foe.distance <= 16 &
   ^can_activate() &
   // don't dash into ray
   ^(foe!dysangelos_perfected|foe.state!115)
@@ -360,7 +364,8 @@ func medium_range_foe()
 
 func must_melee_foe()
   return foe = immune_to_ranged | foe = ranged |
-  ^foe = cult_guard // poisons on ranged hit
+  ^foe = cult_guard | // poisons on ranged hit
+  ^foe = mine_walker // fast armor regen
 
 // ranged_mode: "aoe" or "single"
 func ranged(ranged_mode)
@@ -516,7 +521,8 @@ func fight(mode)
 
   // wand (aoe) range 
   :?foe.distance <= 20
-    ?medium_range_foe() & can_backflip()
+    ?prefer_ranged & medium_range_foe() &
+    ^can_backflip()
       mind_dodge()
     :?foe = immune_to_physical | foe.count >= 4
       aoe()
@@ -570,7 +576,7 @@ func progress()
     free_mind = false
     ?foe ! poena
       return melee_boss("auto")
-    ?mindOK() & foe.distance < 23 & 
+    ?mindCD <= 0 & foe.distance < 23 & 
     ^foe.state = 32 & foe.time > 37
       mind_dodge()
     :
@@ -583,7 +589,7 @@ func progress()
     :?should_smite()
       smite()
     :?foe.distance < 11
-      ?mindOK()
+      ?mindCD <= 0
         mind_dodge()
       :
         melee_boss("auto")
@@ -596,7 +602,7 @@ func progress()
   :?loc = undead_crypt_boss
     free_mind = false
     ?foe.count > 4
-      ?foe.distance < 15 & mindOK()
+      ?foe.distance < 15 & mindCD <= 0
         mind_dodge()
       :
         aoe()
@@ -714,7 +720,7 @@ func fight_nagajara()
     // dash into melee
     melee_boss("dps")
   :?_naga >= 4
-    ?mindOK()
+    ?mindCD <= 0
       // dodge back and repeat
       mind_dodge()
       _naga = 0
@@ -737,6 +743,6 @@ func reset_loop()
 ?loc.loop
   reset_loop()
 
-// if true, show a lot of enemy info
-prelude(false)
+// if true, shows a lot of enemy info
+prelude(true)
 progress()
