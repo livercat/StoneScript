@@ -365,7 +365,8 @@ func medium_range_foe()
 func must_melee_foe()
   return foe = immune_to_ranged | foe = ranged |
   ^foe = cult_guard | // poisons on ranged hit
-  ^foe = mine_walker // fast armor regen
+  ^foe = mine_walker | // fast armor regen
+  ^foe = big_slave_master // high ranged damage
 
 // ranged_mode: "aoe" or "single"
 func ranged(ranged_mode)
@@ -535,8 +536,7 @@ func fight(mode)
   :?foe.distance <= 22
     ?must_melee_foe()
       melee(mode)
-    :?foe = immune_to_physical | 
-    ^(foe.count >= 4 & !medium_range_foe())
+    :?foe = immune_to_physical
       aoe()
     :?prefer_ranged
       ranged("single")
@@ -744,5 +744,5 @@ func reset_loop()
   reset_loop()
 
 // if true, shows a lot of enemy info
-prelude(true)
+prelude(false)
 progress()
