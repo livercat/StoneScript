@@ -9,7 +9,9 @@
 // than I would prefer for readability,
 // but Mindstone has limit of 50 chars
 
-// your weapons
+/***************
+**   Weapons  **
+***************/
 var fire_sh = ""
 var poison_sh = "poison shield *8 ap"
 var ice_sh = ""
@@ -42,13 +44,27 @@ var melee_off = fire_1h
 var default_sh = vigor_sh
 var melee_aoe = ""
 
-// runtime settings
-var blade_damage = 80 // depends on *
-var arm_damage = 32 // depends on *
-var pickpocket = "pick_pocket:2" // depends on *
+/*********************
+** Runtime Settings **
+*********************/
+var smite_damage = 80 // depends on * level
+// at least this many enemies must be present
+// to trigger smite
+var smite_treshold = 7
 var chill = "❄:debuff_chill:6:" // depends on spd
+// set to true if you're doing skeletal arm quests
+var pickpocket_quest = false
+var arm_damage = 32 // depends on * level
+var max_pickpocket = "pick_pocket:2" // depends on *
+// slower but safer, especially if you don't have
+// good vigor shield and weapon
+var prefer_ranged = false
 
-// internal use
+
+
+/***********************
+** Internal variables **
+***********************/
 var _main_hand = "" // weapon switching
 var _at_hrimnir = false // hrimnir fight
 var _naga = 0 // nagaraja fight
@@ -92,12 +108,10 @@ var hammerCD = 0
 var smiteCD = 0
 var bardCD = 0
 var dasher = 0
+var foe_ehp = 0
 var slowed = false
 var poison_stacks = 0
 var low_hp = 0
- // set to true in locations
- // where mind stone isn't needed for
- // mechanics
 var free_mind = false
 
 // updated each frame
@@ -109,7 +123,8 @@ armCD = item.GetCooldown("skeleton_arm")
 hammerCD = item.GetCooldown("hammer")
 smiteCD = item.GetCooldown("blade")
 bardCD = item.GetCooldown("bardiche")
-low_hp = hp < maxhp / 2
+low_hp = hp < (maxhp / 2)
+foe_ehp = foe.armor + foe.hp
 
 func _fill_status_uids()
   var uids = []
@@ -120,10 +135,12 @@ func _fill_status_uids()
 func some(s)
   return ! string.Equals(s, "")
 
-func adjust_damage(dmg)
+func edmg(dmg)
+  // effective damage after
+  // considering posion stacks
   return dmg - poison_stacks
 
-func print_statuses()
+func parse_statuses()
   _good.Clear()
   _bad.Clear()
   poison_stacks = 0
@@ -153,12 +170,13 @@ func print_statuses()
         ^_stu.IndexOf(st_uid) = -1
           _stu.Add(st_uid)
         i = i + 3
+
+func prelude(show_foe)
+  parse_statuses()
   >`1,22,#00A300,+ @string.Join(", ", _good)@
   >`1,23,#FE6800,- @string.Join(", ", _bad)@
   >`1,24,#F008B2,? @string.Join(", ", _stu)@
 
-func draw_hud(show_foe)
-  print_statuses()
   // cooldowns
   >`1,6,#@colorize(mindCD, false)@,Mind 
   ^@time.FormatDigital(mindCD)@
@@ -178,11 +196,12 @@ func draw_hud(show_foe)
   ?show_foe
     >`1,25,#7A8F93,~@foe@
     ?foe
-      >`1,16,#7A8F93,Count: @foe.count@
-      >`1,17,#7A8F93,@foe.name@
-      >`1,18,#7A8F93,Foe DMG: @foe.damage@
-      >`1,19,#7A8F93,Foe State: @foe.state@
-      >`1,20,#7A8F93,Foe Distance: @foe.distance@
+      >`1,15,#7A8F93,Count: @foe.count@
+      >`1,16,#7A8F93,@foe.name@
+      >`1,17,#7A8F93,EHP: @foe_ehp@
+      >`1,18,#7A8F93,DMG: @foe.damage@
+      >`1,19,#7A8F93,State: @foe.state@
+      >`1,20,#7A8F93,Distance: @foe.distance@
 
 func colorize(cd, cond)
   ?cd <= 0
@@ -201,7 +220,7 @@ func healwalk()
     activate potion
   ?foe & foe.distance < 23
     return false
-  ?pickup.distance < 8
+  :?pickup.distance < 8
     equipL star
     equipR triskelion
   :
@@ -219,7 +238,7 @@ func healwalk()
   return true
 
 func dash()
-  ?foe.distance > 5 & 
+  ?foe.distance > 6 & 
   ^can_activate() &
   // don't dash into ray
   ^(foe!dysangelos_perfected|foe.state!115)
@@ -258,8 +277,9 @@ func main_hand(weapon)
   equipL @weapon@
   return true
 
-// mode: "dps" or "def"
+// mode: "dps", "def" or "auto"
 func offhand(mode)
+  mode = select_mode(mode)
   dasher = dash()
   ?dasher ! false
     equipR @dasher@
@@ -272,8 +292,17 @@ func offhand(mode)
     shield()
   return true
 
-// mode: "dps" or "def"
+func select_mode(mode)
+  ?mode = "auto"
+    ?low_hp
+      return "def"
+    :
+      return "dps"
+  return mode
+
+// mode: "dps", "def" or "auto"
 func melee(mode)
+  mode = select_mode(mode)
   _main_hand = ""
   ?use_abilities()
     return true
@@ -297,8 +326,9 @@ func melee(mode)
     main_hand("sword")
   offhand(mode)
 
-// mode: "dps" or "def"
+// mode: "dps", "def" or "auto"
 func debuff(mode)
+  mode = select_mode(mode)
   ?foe.buffs.string = "buff_protection" |
   ^foe.buffs.string = "poena_mirror"
     return false
@@ -347,14 +377,17 @@ func ranged(ranged_mode)
   ranged_offhand()
 
 func aoe()
-  ?some(melee_aoe) &
+  ?prefer_ranged
+    return ranged("aoe")
+  :?some(melee_aoe) &
   ^foe ! immune_to_physical &
   ^foe.distance <= 7
     equip @melee_aoe@
-  ranged("aoe")
+  :
+    ranged("aoe")
 
 func aac(weapon)
-  // animation attack cancelling:
+  // attack animation cancelling:
   // equipping a different weapon
   // right after the attack cancels
   // the backswing animation,
@@ -365,35 +398,37 @@ func aac(weapon)
   equip @weapon@
   return true
 
+func slapOK()
+  return can_activate() & armCD <= 0 &
+  ^foe ! immune_to_physical &
+  ^foe ! pallas // immune
+
 func should_slap()
-  ?foe.distance > 6
-    return false
-  ?buffs.string ! pickpocket
+  ?foe.distance <= 6 &
+  ^buffs.string ! max_pickpocket
     return true
-  ?armCD > 0 |
-  ^foe = pallas | // immune
-  ^!can_activate()
-    return false
-  return (foe.armor + foe.hp) <=
-  ^adjust_damage(arm_damage)
+  :?slapOK()
+    ?pickpocket_quest
+      return foe_ehp <= edmg(arm_damage)
+    return true
+  return false
 
 func slap()
   aac(arm)
   ?item.CanActivate("skeleton_arm") &
-  ^buffs.string = pickpocket
+  ^buffs.string = max_pickpocket
     activate R
     return true
   return false
 
+func smiteOK()
+  return can_activate() & smiteCD <= 0 &
+  ^foe ! pallas & // immune
+  ^(foe=boss | foe_ehp<=edmg(smite_damage))
+
 func should_smite()
-  ?smiteCD > 0 |
-  ^foe = pallas | // immune
-  ^!can_activate() |
-  ^foe.distance > 11
-    return false
-  return foe = boss |
-  ^(foe.count >= 7 & foe.hp <= 
-  ^adjust_damage(blade_damage))
+  return smiteOK() & 
+  ^(foe = boss | foe.count >= smite_treshold)
 
 func smite()
   aac(blade)
@@ -403,18 +438,15 @@ func smite()
   return false
 
 func hammerOK()
-  return hammerCD <= 0 | hammerCD >= 647
+  return can_activate() &
+  ^foe ! immune_to_physical &
+  ^(hammerCD <= 0 | hammerCD >= 647) &
+  ^foe.armor > 0 & foe.distance <= 7 &
+  // delay hammering until shield animation ends
+  ^(foe!dysangelos_perfected | foe.state>=107)
 
 func should_hammer()
-  ?!hammerOK() |
-  ^foe ! boss |
-  ^!can_activate() |
-  ^foe.armor <= 0 |
-  ^foe.distance > 7 |
-  ^(foe=dysangelos_perfected & foe.state<107)
-    // delay hammering until shield animation ends
-    return false
-  return true
+  return hammerOK() & (foe = boss)
 
 func hammer()
   equip heavy hammer // aac doesn't work for it
@@ -424,15 +456,14 @@ func hammer()
   return false
 
 func bardicheOK()
-  return bardCD <= 0 | bardCD >= 870
+  return can_activate() &
+  ^foe ! immune_to_physical &
+  ^(bardCD <= 0 | bardCD >= 870) &
+  ^foe.distance <= 9
 
 func should_bardiche()
-  ?!bardicheOK() |
-  ^!can_activate() |
-  ^foe.distance > 9 |
-  ^(foe ! boss & foe.count < 5)
-    return false
-  return true
+  return bardicheOK() & 
+  ^(foe = boss | foe.count > 4)
 
 func bardiche()
   aac(bardiche)
@@ -444,16 +475,17 @@ func bardiche()
 func use_abilities()
   ?should_hammer()
     return hammer()
-  ?should_bardiche()
-    return bardiche()
   ?should_slap()
     return slap()
   ?should_smite()
     return smite()
+  ?should_bardiche()
+    return bardiche()
   return false
 
-// mode: "dps" or "def"
+// mode: "dps", "def" or "auto"
 func fight(mode)
+  mode = select_mode(mode)
   // xbow range
   ?foe.distance <= 22 & foe.distance > 7
     ?foe = immune_to_ranged |
@@ -462,17 +494,24 @@ func fight(mode)
     ^(foe = ranged & foe.count < 3)
       // move closer
       melee(mode)
+    :?should_smite()
+      smite()
     :?foe.count > 3
-      ?should_smite()
-        smite()
-      :
+      ?prefer_ranged
         ranged("aoe")
-    :
+      :
+        aoe()
+    :?prefer_ranged
       ranged("single")
+    :
+      melee(mode)
   // melee range
+  :?pickpocket_quest & should_slap()
+    slap()
   :?foe = explode & foe.distance < 5
     mind_dodge()
-  :?free_mind & foe.count > 2 & mindCD <= 0
+  :?prefer_ranged & free_mind & 
+  ^foe.count > 2 & mindCD <= 0
     // backflip!
     mind_dodge()
   :?foe = immune_to_physical
@@ -484,15 +523,9 @@ func fight(mode)
 
 // mode: "dps", "def" or "auto"
 func melee_boss(mode)
-  ?mode = "auto"
-    ?low_hp
-      mode = "def"
-    :
-      mode = "dps"
-  var used_r = use_abilities()
-  ?!used_r
-    var debuffed = debuff(mode)
-    ?!debuffed
+  mode = select_mode(mode)
+  ?!use_abilities()
+    ?!debuff(mode)
       melee(mode)
   
 func progress()
@@ -500,16 +533,14 @@ func progress()
     return true
   ?foe ! boss & !_at_hrimnir
     free_mind = true
-    return fight("def")
+    return fight("auto")
 
   // only bosses below
 
   ?loc = rocky
     free_mind = false
     ?foe = dysangelos_elementalist
-      // debuffing is risky in phase 2
-      ?!use_abilities()
-        melee("dps")
+      melee("auto") // debuffing is risky
     :?foe = dysangelos_perfected
       ?foe.state = 115 & foe.time = 60
         // dodge the orb ray
@@ -603,23 +634,25 @@ func fight_hrimnir()
     ranged("single")
   :?foe.count > 1 // deal with adds
     ?slowed // don't waste time on movement
-      ?foe.count = 2
-        ranged("aoe")
+      ?foe.distance < 7
+        melee("auto")
+      :?foe.count > 2
+        aoe()
       :
         ranged("single")
-    :?smiteCD <= 0 & can_activate()
+    :?smiteOK()
       smite()
-    :?bardicheOK() & can_activate() &
-    ^foe.distance <= 9
+    :?bardicheOK() & foe = ice_wall
       bardiche()
     :?foe.count > 2 // elementals
       aoe()
     :
       melee("auto") // ice wall
-  :?!slowed
-    melee_boss("auto")
-  :
+  :?slowed
+    // don't waste time on movement
     ranged("single")
+  :
+    melee_boss("auto")
 
 func detect_poison(pos_x, pos_y)
   >`0,0,x=@x@, y=@y@
@@ -689,5 +722,5 @@ func reset_loop()
   reset_loop()
 
 // if true, show a lot of enemy info
-draw_hud(false)
+prelude(false)
 progress()
