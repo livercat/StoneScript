@@ -72,8 +72,8 @@ var arm_damage = 32
 // depends on * level of skeleton arm
 var max_pickpocket = "pick_pocket:2"
 
-// slower but safer, especially if you don't have
-// good vigor shield and weapon
+// slower but safer, especially if you don't
+// have good vigor shield and weapon
 var prefer_ranged = false
 
 // show enemy info (useful for debug/research)
@@ -83,7 +83,7 @@ var ui_show_foes = false
 var ui_show_cd = true
 
 // show your buffs/debuffs
-var ui_show_statuses = false
+var ui_show_statuses = true
 
 
 
@@ -110,8 +110,9 @@ var _statuses = [
 ^["pick_pocket", "Pickpocket", "+"],
 ^["vampiric", "Vampiric", "+"],
 ^["lucky_crit_multi", "Lucky", "+"],
-^["debuff_damage", "DmgDown!", "-"],
+^["debuff_damage", "DmgDown", "-"],
 ^["debuff_duration_damage", "DmgDown", "-"],
+^["spider_debuff_damage", "DmgDown", "-"],
 ^["debuff_yeti_chill", "AtkSlow", "-"],
 ^["debuff_attack_speed", "AtkSlow", "-"],
 ^["debuff_move_speed", "MoveSlow", "-"],
@@ -121,12 +122,13 @@ var _statuses = [
 ]
 // poor man's hashmap
 var _status_uids = _fill_status_uids()
-
 var dmg_debuffs = [
-^"debuff_damage", "debuff_duration_damage"]
+^"debuff_damage", "debuff_duration_damage",
+^"spider_debuff_damage",
+]
 var slow_debuffs = [
-^"debuff_chill", "debuff_move_speed"]
-
+^"debuff_chill", "debuff_move_speed"
+]
 var mindCD = 0
 var staffCD = 0
 var bashCD = 0
@@ -454,7 +456,10 @@ func should_slap()
   return false
 
 func slap()
-  aac(arm)
+  ?buffs.string = max_pickpocket
+    aac(arm)
+  : // otherwise attacks will cancel themselves
+    equip @arm@
   ?item.CanActivate("skeleton_arm")
     activate R
   return true
@@ -616,15 +621,11 @@ func progress()
 
   :?loc = caves
     free_mind = false
-    ?should_bard()
-      bardiche()
-    :?should_smite()
-      smite()
-    :?foe.distance < 11
-      ?mindCD <= 0
-        backflip()
-      :
-        melee_boss("auto")
+    ?mindCD <= 0 & foe.state = 133 & 
+    ^foe.time = 17
+      backflip()
+    :?bardCD <= 0 | bardCD >= 870 | low_hp
+      melee_boss("auto")
     :
       ranged("single")
 
